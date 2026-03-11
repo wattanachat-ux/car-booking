@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>เอกสารเบิกรถ Guts IOC</title>
+<style>
+body{font-family:Arial;background:#eef2f7;padding:20px}
+.card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+h2{margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
+button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
+button.red{background:#e5533d}
+button.green{background:#0a8a2a}
+button.gray{background:#555}
+button.purple{background:#7b2cff}
+.table{width:100%;border-collapse:collapse;margin-top:20px}
+.table th,.table td{border:1px solid #ccc;padding:6px;text-align:center}
+.wait{color:#d18b00;font-weight:bold}
+.active{color:#0a8a2a;font-weight:bold}
+.deny{color:#c10000;font-weight:bold}
+.dashboard{margin-top:20px;padding:12px;background:#f5f7fb;border-radius:8px}
+.busy{color:#c10000;font-weight:bold}
+.summary{margin-top:10px;font-weight:bold}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
+
+<div class="grid">
+<div>
+<label>วันที่</label>
+<input type="date" id="date" onchange="renderAll()">
+</div>
+
+<div>
+<label>ทะเบียนรถ</label>
+<select id="car"></select>
+</div>
+
+<div>
+<label>โครงการ</label>
+<input id="project">
+</div>
+
+<div>
+<label>ผู้ขับ</label>
+<select id="driver"></select>
+</div>
+
+<div>
+<label>ผู้ร่วมเดินทาง 1</label>
+<select id="p1"></select>
+</div>
+
+<div>
+<label>ผู้ร่วมเดินทาง 2</label>
+<select id="p2"></select>
+</div>
+
+<div>
+<label>เวลาเริ่ม</label>
+<input type="time" id="start">
+</div>
+
+<div>
+<label>เวลาจบ</label>
+<input type="time" id="end">
+</div>
+</div>
+
+<br>
+<button onclick="saveBooking()">บันทึก</button>
+<button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
+<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
+<button class="green" onclick="exportCSV()" id="exportBtn" style="display:none">Export</button>
+
+<div class="dashboard" id="dash"></div>
+<div class="summary" id="summary"></div>
+
+<table class="table">
+<thead>
+<tr>
+<th>วันที่</th>
+<th>รถ</th>
+<th>โครงการ</th>
+<th>ผู้ขับ</th>
+<th>ผู้ร่วมเดินทาง</th>
+<th>เวลา</th>
+<th>สถานะ</th>
+<th>อนุมัติ</th>
+<th>ลบ</th>
+</tr>
+</thead>
+<tbody id="tb"></tbody>
+</table>
+
+</div>
+
+<script>
+
+// ⭐⭐ ใส่ URL Apps Script ของมึงตรงนี้ ⭐⭐
+const API_URL = "https://script.google.com/macros/s/AKfycbznyW_QUZwR-iri2XJizNvX8hE5Dk2LN0sDQRFXytfpk_H9nY4X0hvXc3F4wLLYE8ux/exec";
+
+let admin=false;
+let adminName="";
+let bookings=[];
+
+const peopleDriver=[
+"จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"
+];
+
+const peoplePassenger=["-- ไม่มีผู้ร่วมเดินทาง --",...peopleDriver];
+
+const cars=[
+"toyota yaris 6กญ1240",
+"toyota yaris 6กฌ9085",
+"toyota revo 1ฒภ6727",
+"toyota revo 2ฒข4846"
+];
+
+const dateInput=document.getElementById("date");
+const carInput=document.getElementById("car");
+const projectInput=document.getElementById("project");
+const driverSel=document.getElementById("driver");
+const p1Sel=document.getElementById("p1");
+const p2Sel=document.getElementById("p2");
+const startInput=document.getElementById("start");
+const endInput=document.getElementById("end");
+const tb=document.getElementById("tb");
+const dash=document.getElementById("dash");
+const summary=document.getElementById("summary");
+const exportBtn=document.getElementById("exportBtn");
+
+cars.forEach(c=> carInput.add(new Option(c,c)));
+peopleDriver.forEach(p=> driverSel.add(new Option(p,p)));
+peoplePassenger.forEach(p=>{
+ p1Sel.add(new Option(p,p));
+ p2Sel.add(new Option(p,p));
+});
+
+// ================= LOAD =================
+
+async function loadData(){
+
+const res = await fetch(API_URL+"?action=get");
+const data = await res.json();
+
+bookings = data;
+renderAll();
+
+}
+
+// ================= SAVE =================
+
+async function saveBooking(){
+
+let obj={
+ date:dateInput.value,
+ car:carInput.value,
+ project:projectInput.value,
+ driver:driverSel.value,
+ p1:p1Sel.value,
+ p2:p2Sel.value,
+ start:startInput.value,
+ end:endInput.value
+};
+
+if(!obj.date || !obj.project || !obj.start || !obj.end){
+ alert("กรอกข้อมูลให้ครบ");
+ return;
+}
+
+if(obj.end < obj.start) obj.end="23:59";
+
+await fetch(API_URL,{
+ method:"POST",
+ body:JSON.stringify({action:"save",data:obj})
+});
+
+alert("บันทึกสำเร็จ");
+loadData();
+
+}
+
+// ================= APPROVE =================
+
+async function approve(id){
+
+await fetch(API_URL,{
+ method:"POST",
+ body:JSON.stringify({action:"approve",id:id,admin:adminName})
+});
+
+loadData();
+}
+
+async function deny(id){
+
+await fetch(API_URL,{
+ method:"POST",
+ body:JSON.stringify({action:"deny",id:id})
+});
+
+loadData();
+}
+
+async function deleteBooking(id){
+
+await fetch(API_URL,{
+ method:"POST",
+ body:JSON.stringify({action:"delete",id:id})
+});
+
+loadData();
+}
+
+// ================= RENDER =================
+
+function renderAll(){
+ renderTable();
+ renderDashboard();
+ renderSummary();
+}
+
+function renderTable(){
+ let html="";
+
+ bookings.forEach(b=>{
+
+ let approveCell=b.approvedBy || "-";
+ let deleteCell="-";
+
+ if(admin){
+ deleteCell=`<button onclick="deleteBooking('${b.id}')" class='gray'>ลบ</button>`;
+
+ if(b.status==="wait"){
+
+ let hasActive=bookings.find(x=>x.car===b.car && x.date===b.date && x.status==="active");
+
+ if(hasActive){
+ approveCell="❌ มีการอนุมัติแล้ว";
+ }else{
+ approveCell=`
+ <button onclick="approve('${b.id}')">อนุมัติ</button>
+ <button onclick="deny('${b.id}')" class='red'>ไม่อนุมัติ</button>
+ `;
+ }
+ }
+ }
+
+ html+=`<tr>
+ <td>${b.date}</td>
+ <td>${b.car}</td>
+ <td>${b.project}</td>
+ <td>${b.driver}</td>
+ <td>${b.p1}${b.p2!="-- ไม่มีผู้ร่วมเดินทาง --"?", "+b.p2:""}</td>
+ <td>${b.start}-${b.end}</td>
+ <td class='${b.status}'>${b.status}</td>
+ <td>${approveCell}</td>
+ <td>${deleteCell}</td>
+ </tr>`;
+
+ });
+
+ tb.innerHTML=html;
+}
+
+function renderDashboard(){
+ let d=dateInput.value;
+ let html="";
+
+ cars.forEach(c=>{
+  let busy=bookings.find(x=>x.car===c && x.date===d && x.status==="active");
+  if(busy){ html+=`<div class='busy'>${c}</div>` }
+ });
+
+ dash.innerHTML=html || "ไม่มีรถใช้งาน";
+}
+
+function renderSummary(){
+ let today=dateInput.value;
+ let a=bookings.filter(b=>b.date===today && b.status==="active").length;
+ let w=bookings.filter(b=>b.date===today && b.status==="wait").length;
+ let d=bookings.filter(b=>b.date===today && b.status==="deny").length;
+ summary.innerHTML=`Active ${a} | Wait ${w} | Deny ${d}`;
+}
+
+// ================= ADMIN =================
+
+function loginAdmin(){
+ let pass=prompt("รหัส");
+ if(pass==="11223344"){admin=true;adminName="จิรศักดิ์"}
+ if(pass==="12121212"){admin=true;adminName="จุติมา"}
+
+ if(admin){
+ document.getElementById("loginBtn").style.display="none";
+ document.getElementById("logoutBtn").style.display="inline-block";
+ exportBtn.style.display="inline-block";
+ }
+ renderAll();
+}
+
+function logoutAdmin(){
+ admin=false;
+ adminName="";
+ document.getElementById("loginBtn").style.display="inline-block";
+ document.getElementById("logoutBtn").style.display="none";
+ exportBtn.style.display="none";
+ renderAll();
+}
+
+function exportCSV(){
+ let csv="date,car,project,driver,p1,p2,start,end,status,approvedBy\n";
+ bookings.forEach(b=>{
+ csv+=`${b.date},${b.car},${b.project},${b.driver},${b.p1},${b.p2},${b.start},${b.end},${b.status},${b.approvedBy}\n`;
+ });
+ let blob=new Blob([csv]);
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="fleet.csv";
+ a.click();
+}
+
+loadData();
+
+</script>
+</body>
+</html>
