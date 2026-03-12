@@ -1,135 +1,153 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <title>เอกสารเบิกรถ Guts IOC</title>
-    <style>
-        body{font-family:Arial;background:#eef2f7;padding:20px}
-        .card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
-        h2{margin-top:0}
-        .grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-        input,select{padding:8px;border:1px solid #ccc;border-radius:8px;width:100%}
-        button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px;margin-top:10px}
-        button.red{background:#e5533d}
-        button.green{background:#0a8a2a}
-        .table{width:100%;border-collapse:collapse;margin-top:20px}
-        .table th,.table td{border:1px solid #ccc;padding:8px;text-align:center}
-        .badge{padding:4px 10px;border-radius:20px;color:#fff;font-size:12px}
-        .badge.wait{background:#d18b00}.badge.ok{background:#0a8a2a}.badge.no{background:#c10000}
-        #loading{display:none;color:#2d6cdf;font-weight:bold}
-    </style>
+<meta charset="UTF-8">
+<title>เอกสารเบิกรถ Guts IOC</title>
+<style>
+body{font-family:Arial;background:#eef2f7;padding:20px}
+.card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+h2{margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
+button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
+button.red{background:#e5533d}
+button.green{background:#0a8a2a}
+button.purple{background:#7b2cff}
+.table{width:100%;border-collapse:collapse;margin-top:20px}
+.table th,.table td{border:1px solid #ccc;padding:6px;text-align:center}
+.badge{padding:4px 10px;border-radius:20px;color:#fff;font-size:12px}
+.badge.wait{background:#d18b00}
+.badge.ok{background:#0a8a2a}
+.badge.no{background:#c10000}
+#loading{display:none; color: #2d6cdf; font-weight: bold; margin-left: 10px;}
+</style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
-    <div class="grid">
-        <div><label>วันที่</label><input type="date" id="date"></div>
-        <div><label>ทะเบียนรถ</label><select id="car"></select></div>
-        <div><label>โครงการ</label><input id="project"></div>
-        <div><label>ผู้ขับ</label><select id="driver"></select></div>
-        <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
-        <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
-        <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
-        <div><label>เวลาจบ</label><input type="time" id="end"></div>
-    </div>
+<h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
 
-    <button onclick="saveBooking()" id="saveBtn">บันทึกการจอง</button>
-    <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
-    <span id="loading"> กำลังดำเนินการ...</span>
+<div class="grid">
+<div><label>วันที่</label><input type="date" id="date"></div>
+<div><label>ทะเบียนรถ</label><select id="car"></select></div>
+<div><label>โครงการ</label><input id="project"></div>
+<div><label>ผู้ขับ</label><select id="driver"></select></div>
+<div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
+<div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+<div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+<div><label>เวลาจบ</label><input type="time" id="end"></div>
+</div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>เวลา</th><th>สถานะ</th><th>จัดการ</th>
-            </tr>
-        </thead>
-        <tbody id="tb"></tbody>
-    </table>
+<br>
+<button onclick="saveBooking()" id="saveBtn">บันทึก</button>
+<button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
+<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Logout Admin</button>
+<span id="loading">กำลังประมวลผล...</span>
+
+<table class="table">
+<thead>
+<tr>
+<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>เวลา</th><th>สถานะ</th><th>จัดการ</th>
+</tr>
+</thead>
+<tbody id="tb"></tbody>
+</table>
 </div>
 
 <script>
-    const API = "ใส่_URL_เว็บแอป_ของคุณที่นี่"; // *** เปลี่ยนที่นี่ ***
+const API = "ใส่_URL_เว็บแอป_ของคุณที่นี่"; // *** วาง URL จาก Apps Script ตรงนี้ ***
 
-    let bookings = [];
-    let admin = false;
-    let adminName = "";
+let admin = false;
+let adminName = "";
+let bookings = [];
 
-    const cars = ["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
-    const people = ["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด"];
+const cars = ["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
+const people = ["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
+
+// Setup Dropdowns
+const carSel = document.getElementById('car');
+const driverSel = document.getElementById('driver');
+const p1Sel = document.getElementById('p1');
+const p2Sel = document.getElementById('p2');
+
+cars.forEach(c => carSel.add(new Option(c,c)));
+people.forEach(p => driverSel.add(new Option(p,p)));
+[p1Sel, p2Sel].forEach(s => {
+    s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --", ""));
+    people.forEach(p => s.add(new Option(p,p)));
+});
+
+async function loadData() {
+    const res = await fetch(API);
+    bookings = await res.json();
+    renderTable();
+}
+
+async function saveBooking() {
+    const d = document.getElementById('date').value;
+    if(!d) return alert("กรุณาเลือกวันที่");
     
-    // Setup Dropdowns
-    cars.forEach(c => document.getElementById('car').add(new Option(c, c)));
-    people.forEach(p => document.getElementById('driver').add(new Option(p, p)));
-    document.getElementById('p1').add(new Option("-- ไม่มี --", ""));
-    document.getElementById('p2').add(new Option("-- ไม่มี --", ""));
-    people.forEach(p => { 
-        document.getElementById('p1').add(new Option(p, p)); 
-        document.getElementById('p2').add(new Option(p, p)); 
-    });
+    document.getElementById('loading').style.display = "inline";
+    document.getElementById('saveBtn').disabled = true;
 
-    async function loadData() {
-        const res = await fetch(API);
-        bookings = await res.json();
-        renderTable();
-    }
+    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
 
-    async function saveBooking() {
-        const btn = document.getElementById('saveBtn');
-        const loader = document.getElementById('loading');
-        
-        btn.disabled = true;
-        loader.style.display = "inline";
+    await fetch(url);
+    alert("บันทึกเรียบร้อย!");
+    
+    document.getElementById('loading').style.display = "none";
+    document.getElementById('saveBtn').disabled = false;
+    loadData();
+}
 
-        const url = `${API}?action=save&id=${Date.now()}&date=${date.value}&car=${encodeURIComponent(car.value)}&project=${encodeURIComponent(project.value)}&driver=${encodeURIComponent(driver.value)}&p1=${encodeURIComponent(p1.value)}&p2=${encodeURIComponent(p2.value)}&start=${start.value}&end=${end.value}`;
+async function updateStatus(id, status) {
+    document.getElementById('loading').style.display = "inline";
+    const url = `${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(adminName)}`;
+    await fetch(url);
+    document.getElementById('loading').style.display = "none";
+    loadData();
+}
 
-        await fetch(url);
-        alert("บันทึกข้อมูลเรียบร้อย!");
-        
-        btn.disabled = false;
-        loader.style.display = "none";
-        loadData();
-    }
+function renderTable() {
+    let html = "";
+    bookings.forEach(b => {
+        let statusBadge = `<span class="badge wait">รออนุมัติ</span>`;
+        if(b.status === "อนุมัติ") statusBadge = `<span class="badge ok">อนุมัติ</span>`;
+        if(b.status === "ไม่อนุมัติ") statusBadge = `<span class="badge no">ไม่อนุมัติ</span>`;
 
-    async function updateStatus(id, status) {
-        const url = `${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(adminName)}`;
-        await fetch(url);
-        loadData();
-    }
-
-    function renderTable() {
-        let html = "";
-        bookings.forEach(b => {
-            let badgeClass = b.status === "อนุมัติ" ? "ok" : (b.status === "ไม่อนุมัติ" ? "no" : "wait");
-            let actionHtml = "";
-            if (admin && b.status === "รออนุมัติ") {
-                actionHtml = `<button class="green" onclick="updateStatus('${b.id}', 'อนุมัติ')">อนุมัติ</button> 
-                              <button class="red" onclick="updateStatus('${b.id}', 'ไม่อนุมัติ')">ปฏิเสธ</button>`;
-            } else {
-                actionHtml = b.approvedBy || "-";
-            }
-
-            html += `<tr>
-                <td>${b.date}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
-                <td>${b.start}-${b.end}</td>
-                <td><span class="badge ${badgeClass}">${b.status}</span></td>
-                <td>${actionHtml}</td>
-            </tr>`;
-        });
-        document.getElementById('tb').innerHTML = html;
-    }
-
-    function loginAdmin() {
-        let p = prompt("รหัส Admin:");
-        if (p === "11223344") { 
-            admin = true; 
-            adminName = "จิรศักดิ์"; 
-            document.getElementById('loginBtn').innerText = "Admin: " + adminName;
+        let actionHtml = b.approvedBy || "-";
+        if(admin && b.status === "รออนุมัติ") {
+            actionHtml = `<button class="green" onclick="updateStatus('${b.id}', 'อนุมัติ')">อนุมัติ</button> 
+                          <button class="red" onclick="updateStatus('${b.id}', 'ไม่อนุมัติ')">ปฏิเสธ</button>`;
         }
+
+        html += `<tr>
+            <td>${b.date}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
+            <td>${b.start}-${b.end}</td><td>${statusBadge}</td><td>${actionHtml}</td>
+        </tr>`;
+    });
+    document.getElementById('tb').innerHTML = html;
+}
+
+function loginAdmin() {
+    let p = prompt("รหัส Admin:");
+    if(p === "11223344" || p === "12121212") {
+        admin = true;
+        adminName = (p === "11223344") ? "จิรศักดิ์" : "จุติมา";
+        document.getElementById('loginBtn').style.display = "none";
+        document.getElementById('logoutBtn').style.display = "inline-block";
         renderTable();
     }
+}
 
-    window.onload = loadData;
+function logoutAdmin() {
+    admin = false; adminName = "";
+    document.getElementById('loginBtn').style.display = "inline-block";
+    document.getElementById('logoutBtn').style.display = "none";
+    renderTable();
+}
+
+window.onload = loadData;
 </script>
 </body>
 </html>
