@@ -179,11 +179,35 @@ function timeOverlap(aStart,aEnd,bStart,bEnd){
  return (aStart < bEnd && aEnd > bStart)
 }
 
+// แก้ไขฟังก์ชัน saveBooking ของคุณให้เป็นแบบนี้
 async function saveBooking(){
- if(saving) return
- saving=true
- saveBtn.disabled=true
- loading.style.display="flex"
+  if(saving) return
+  saving=true
+  saveBtn.disabled=true
+  loading.style.display="flex"
+
+  // สร้าง URL ที่แนบข้อมูลไปกับชื่อตัวแปร (Query String)
+  let url = API 
+    + "?action=save"
+    + "&id=" + Date.now()
+    + "&date=" + dateInput.value
+    + "&car=" + encodeURIComponent(carInput.value)
+    + "&project=" + encodeURIComponent(projectInput.value)
+    + "&driver=" + encodeURIComponent(driverSel.value)
+    + "&p1=" + encodeURIComponent(p1Sel.value)
+    + "&p2=" + encodeURIComponent(p2Sel.value)
+    + "&start=" + startInput.value
+    + "&end=" + endInput.value;
+
+  // ส่งแบบ GET แทน POST เพื่อหลีกเลี่ยง CORS Policy
+  await fetch(url);
+  
+  alert("บันทึกข้อมูลเรียบร้อย");
+  loading.style.display="none";
+  saveBtn.disabled=false;
+  saving=false;
+  loadData();
+}
 
 const date=dateInput.value
 if(date<todayStr){alert("ห้ามลงย้อนหลัง");saving=false;saveBtn.disabled=false;loading.style.display="none";return}
