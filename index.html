@@ -109,10 +109,9 @@ document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
 const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
-/* ✅ โหลดข้อมูลแบบ SIMPLE เหมือน code เดิม (sync ชัวร์) */
 async function loadData(){
  try{
-  const res = await fetch(API);
+  const res = await fetch(`${API}?action=get`);
   bookings = await res.json();
  }catch(e){
   alert("โหลดข้อมูลจาก Sheet ไม่ได้");
@@ -149,7 +148,6 @@ function render(){
   if(admin){
     if(b.status==="รออนุมัติ"){
 
-      // 🚫 rule รถซ้ำวันเดียวกันห้ามอนุมัติ
       let alreadyApproved = bookings.find(x=>x.date===b.date && x.car===b.car && x.status==="อนุมัติ");
 
       if(alreadyApproved){
@@ -246,17 +244,17 @@ function exportCSV(){
 
 function formatTime(t){
  if(!t) return "-";
- let [h,m]=t.split(":");
- return `${h.padStart(2,"0")}:${m.padStart(2,"0")}`;
+ let parts=t.split(":");
+ return `${parts[0].padStart(2,"0")}:${parts[1].padStart(2,"0")}`;
 }
 
 async function deleteRow(id){
  if(!confirm("ลบรายการนี้ ?")) return;
  try{
   await fetch(`${API}?action=delete&id=${id}`);
-  loadData();
+  await loadData();
  }catch(e){
-  alert("ลบไม่สำเร็จ");
+  alert("ลบไม่สำเร็จ (CORS / Permission)");
  }
 }
 
