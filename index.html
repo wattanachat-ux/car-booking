@@ -139,7 +139,6 @@ function render(){
  let html="";
 
  data.forEach(b=>{
-
   let badge="<span class='badge wait'>รออนุมัติ</span>";
   if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
   if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
@@ -147,17 +146,51 @@ function render(){
   let action=b.approvedBy ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approvedBy}</span>` : "-";
 
   if(admin){
+    // ปุ่มลบจะปรากฏเสมอสำหรับ Admin ทุกรายการ
+    let deleteBtn = `<button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
+    
     if(b.status==="รออนุมัติ"){
-
       let alreadyApproved = bookings.find(x=>x.date===b.date && x.car===b.car && x.status==="อนุมัติ");
-
       if(alreadyApproved){
-        action="❌ มีคันนี้อนุมัติแล้ว";
-      }else{
+        action="❌ มีคันนี้อนุมัติแล้ว " + deleteBtn;
+      } else {
         action=`<button class='green' onclick='approve("${b.id}")'>อนุมัติ</button>
                 <button class='red' onclick='deny("${b.id}")'>ไม่อนุมัติ</button>
-                <button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
+                ${deleteBtn}`;
       }
+    } else {
+      action = deleteBtn;
+    }
+  }
+
+  html+=`<tr>
+   <td>${b.date}</td>
+   <td>${b.car}</td>
+   <td>${b.project}</td>
+   <td>${b.driver}</td>
+   <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
+   <td>${badge}</td>
+   <td>${action}</td>
+ </tr>`;
+ });
+
+ document.getElementById("tb").innerHTML=html;
+ renderPagination();
+}
+
+// ฟังก์ชันลบที่แก้ไข Syntax ให้ถูกต้อง
+async function deleteRow(id){
+ if(!admin) return alert("เฉพาะ admin เท่านั้น");
+ if(!confirm("ลบรายการนี้ ?")) return;
+ try{
+  const res = await fetch(`${API}?action=delete&id=${id}&ts=`+Date.now(),{method:"GET"});
+  const txt = await res.text();
+  console.log("delete result:",txt);
+  await loadData();
+ }catch(e){
+  alert("ลบไม่สำเร็จ กรุณาเช็ค Script ของ Google Apps ว่ามีคำสั่ง doGet/doPost รองรับ action=delete หรือไม่");
+ }
+}
 
     }else{
       action=`<button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
