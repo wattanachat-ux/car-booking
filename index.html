@@ -21,6 +21,8 @@ button.purple{background:#7b2cff}
 .badge.no{background:#c10000}
 .dashboard{margin-top:15px;font-weight:bold}
 .filter{margin-top:15px}
+.pagination{margin-top:15px;text-align:center}
+.pagination button{margin:2px;padding:6px 12px}
 </style>
 </head>
 <body>
@@ -29,7 +31,7 @@ button.purple{background:#7b2cff}
 <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
 
 <div class="grid">
-<div><label>วันที่</label><input type="date" id="date"></div>
+<div><label>วันที่</label><input type="date" id="date" onchange="renderDash()"></div>
 <div><label>ทะเบียนรถ</label><select id="car"></select></div>
 <div><label>โครงการ</label><input id="project"></div>
 <div><label>ผู้ขับ</label><select id="driver"></select></div>
@@ -62,6 +64,9 @@ button.purple{background:#7b2cff}
 </thead>
 <tbody id="tb"></tbody>
 </table>
+
+<div class="pagination" id="page"></div>
+
 </div>
 
 <script>
@@ -72,6 +77,8 @@ let bookings=[];
 let viewData=[];
 let admin=false;
 let adminName="";
+let page=1;
+let perPage=5;
 
 const cars=["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
 const people=["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
@@ -98,7 +105,6 @@ document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
  people.forEach(p=>s.add(new Option(p,p)));
 });
 
-// 🔥 ห้ามย้อนหลัง
 const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
@@ -112,7 +118,7 @@ async function loadData(){
 
 function renderDash(){
  const d=document.getElementById("date").value;
- let html="รถที่ใช้งาน: ";
+ let html="รถที่ใช้งาน:";
  cars.forEach(c=>{
   let busy=bookings.find(b=>b.date===d && b.car===c && b.status==="อนุมัติ");
   if(busy) html+=` 🔴 ${c}`;
@@ -151,15 +157,19 @@ async function deny(id){
 }
 
 function render(){
+ let startIndex=(page-1)*perPage;
+ let data=viewData.slice(startIndex,startIndex+perPage);
  let html="";
- viewData.forEach(b=>{
+
+ data.forEach(b=>{
 
   let badge="<span class='badge wait'>รอ</span>";
   if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
   if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
 
   let action=b.approvedBy||"-";
-  if(admin && b.status==="รอ"){
+
+  if(admin && (b.status==="รอ" || b.status==="รออนุมัติ")){
    action=`<button class='green' onclick='approve("${b.id}")'>อนุมัติ</button>
            <button class='red' onclick='deny("${b.id}")'>ไม่อนุมัติ</button>`;
   }
@@ -176,7 +186,28 @@ function render(){
  });
 
  document.getElementById("tb").innerHTML=html;
+ renderPagination();
 }
+
+function renderPagination(){
+ let total=Math.ceil(viewData.length/perPage);
+ if(total<=1){document.getElementById("page").innerHTML="";return}
+
+ let html="";
+ html+=`<button onclick='prevPage()'><</button>`;
+
+ for(let i=1;i<=total;i++){
+  html+=`<button onclick='goPage(${i})' ${i===page?"style=\"background:#0a8a2a\"":""}>${i}</button>`;
+ }
+
+ html+=`<button onclick='nextPage()'>></button>`;
+
+ document.getElementById("page").innerHTML=html;
+}
+
+function prevPage(){page--; if(page<1)page=1; render()}
+function nextPage(){page++; render()}
+function goPage(p){page=p; render()}
 
 function filterData(){
  const fc=document.getElementById("fcar").value;
@@ -186,6 +217,7 @@ function filterData(){
  viewData=bookings.filter(b=>{
   return (!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt||b.date===fdt);
  });
+ page=1;
  render();
 }
 
