@@ -110,13 +110,17 @@ const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
 async function loadData(){
- const r=await fetch(API+"?action=get",{method:"GET",mode:"cors"});
- const text=await r.text();
  try{
+  const r=await fetch(API+"?action=get&t="+Date.now());
+  if(!r.ok) throw new Error("HTTP "+r.status);
+
+  const text=await r.text();
+  console.log("API RAW:",text);
+
   bookings=JSON.parse(text);
  }catch(e){
-  console.error("API RESPONSE NOT JSON:",text);
-  alert("ดึงข้อมูลจาก Sheet ไม่ได้ — ดู Console");
+  console.error("LOAD ERROR",e);
+  alert("❌ ดึงข้อมูลจาก Google Sheet ไม่ได้ — เช็ค Deployment / Permission / doGet");
   bookings=[];
  }
  viewData=[...bookings];
@@ -225,7 +229,7 @@ function renderPagination(){
   html+=`<button onclick='goPage(${i})' ${i===page?"style=\"background:#0a8a2a\"":""}>${i}</button>`;
  }
 
- html+=`<button onclick='nextPage()'>></button>`;
+ html+=`<button onclick='nextPage()'>>></button>`;
 
  document.getElementById("page").innerHTML=html;
 }
