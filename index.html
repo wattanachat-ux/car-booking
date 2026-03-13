@@ -12,13 +12,15 @@ input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
 button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
 button.red{background:#e5533d}
 button.green{background:#0a8a2a}
-button.gray{background:#555}
 button.purple{background:#7b2cff}
 .table{width:100%;border-collapse:collapse;margin-top:20px}
 .table th,.table td{border:1px solid #ccc;padding:6px;text-align:center}
-.status-ok{color:#0a8a2a;font-weight:bold}
-.status-wait{color:#d18b00;font-weight:bold}
-.status-no{color:#c10000;font-weight:bold}
+.badge{padding:4px 10px;border-radius:20px;color:#fff;font-size:12px}
+.badge.wait{background:#d18b00}
+.badge.ok{background:#0a8a2a}
+.badge.no{background:#c10000}
+.dashboard{margin-top:15px;font-weight:bold}
+.filter{margin-top:15px}
 </style>
 </head>
 <body>
@@ -27,7 +29,7 @@ button.purple{background:#7b2cff}
 <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
 
 <div class="grid">
-<div><label>วันที่</label><input type="date" id="date" onchange="lockCarDropdown()"></div>
+<div><label>วันที่</label><input type="date" id="date"></div>
 <div><label>ทะเบียนรถ</label><select id="car"></select></div>
 <div><label>โครงการ</label><input id="project"></div>
 <div><label>ผู้ขับ</label><select id="driver"></select></div>
@@ -41,18 +43,21 @@ button.purple{background:#7b2cff}
 <button onclick="saveBooking()">บันทึก</button>
 <button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
 <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
-<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
+<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Logout Admin</button>
+
+<div class="dashboard" id="dash"></div>
+
+<div class="filter">
+<select id="fcar"></select>
+<select id="fdriver"></select>
+<input type="date" id="fdate">
+<button onclick="filterData()">Filter</button>
+</div>
 
 <table class="table">
 <thead>
 <tr>
-<th>วันที่</th>
-<th>รถ</th>
-<th>โครงการ</th>
-<th>ผู้ขับ</th>
-<th>เวลา</th>
-<th>สถานะ</th>
-<th>จัดการ</th>
+<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>เวลา</th><th>สถานะ</th><th>จัดการ</th>
 </tr>
 </thead>
 <tbody id="tb"></tbody>
@@ -61,9 +66,10 @@ button.purple{background:#7b2cff}
 
 <script>
 
-const API = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
+const API="https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
 
-let bookings = [];
+let bookings=[];
+let viewData=[];
 let admin=false;
 let adminName="";
 
@@ -75,75 +81,87 @@ const driverSel=document.getElementById("driver");
 const p1Sel=document.getElementById("p1");
 const p2Sel=document.getElementById("p2");
 
-cars.forEach(c=>carSel.add(new Option(c,c)));
-people.forEach(p=>driverSel.add(new Option(p,p)));
+cars.forEach(c=>{
+ carSel.add(new Option(c,c));
+ document.getElementById("fcar").add(new Option(c,c));
+});
+document.getElementById("fcar").add(new Option("ทั้งหมด",""));
+
+people.forEach(p=>{
+ driverSel.add(new Option(p,p));
+ document.getElementById("fdriver").add(new Option(p,p));
+});
+document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
+
 [p1Sel,p2Sel].forEach(s=>{
  s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
  people.forEach(p=>s.add(new Option(p,p)));
 });
 
+// 🔥 ห้ามย้อนหลัง
+const today=new Date().toISOString().split("T")[0];
+document.getElementById("date").min=today;
+
 async function loadData(){
- const res=await fetch(API);
- bookings=await res.json();
- renderTable();
+ const r=await fetch(API);
+ bookings=await r.json();
+ viewData=[...bookings];
+ render();
+ renderDash();
 }
 
-function lockCarDropdown(){
+function renderDash(){
  const d=document.getElementById("date").value;
- Array.from(carSel.options).forEach(o=>o.disabled=false);
- bookings.forEach(b=>{
-  if(b.date===d && b.status==="อนุมัติ"){
-   Array.from(carSel.options).forEach(o=>{
-    if(o.value===b.car) o.disabled=true;
-   });
-  }
+ let html="รถที่ใช้งาน: ";
+ cars.forEach(c=>{
+  let busy=bookings.find(b=>b.date===d && b.car===c && b.status==="อนุมัติ");
+  if(busy) html+=` 🔴 ${c}`;
  });
+ document.getElementById("dash").innerHTML=html;
 }
 
 async function saveBooking(){
  const d=document.getElementById("date").value;
+ if(d<today) return alert("ห้ามย้อนหลัง");
+
  const car=carSel.value;
- const project=document.getElementById("project").value;
  const driver=driverSel.value;
  const p1=p1Sel.value;
  const p2=p2Sel.value;
- const start=document.getElementById("start").value;
- const end=document.getElementById("end").value;
 
- if(!d||!driver||!project||!start||!end) return alert("กรอกข้อมูลให้ครบ");
-
- if(p1 && (p1===driver)) return alert("ชื่อซ้ำ");
+ if(p1 && p1===driver) return alert("ชื่อซ้ำ");
  if(p2 && (p2===driver||p2===p1)) return alert("ชื่อซ้ำ");
 
  const dup=bookings.find(b=>b.date===d && b.car===car && b.status==="อนุมัติ");
- if(dup) return alert("รถคันนี้ถูกอนุมัติแล้ว");
+ if(dup) return alert("รถถูกใช้งานแล้ว");
 
- const url=`${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(car)}&project=${encodeURIComponent(project)}&driver=${encodeURIComponent(driver)}&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&start=${start}&end=${end}`;
-
+ const url=`${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(car)}&project=${encodeURIComponent(project.value)}&driver=${encodeURIComponent(driver)}&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&start=${start.value}&end=${end.value}`;
  await fetch(url);
  loadData();
 }
 
-async function updateStatus(id,status){
- const url=`${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(adminName)}`;
- await fetch(url);
+async function approve(id){
+ await fetch(`${API}?action=updateStatus&id=${id}&status=อนุมัติ&admin=${adminName}`);
  loadData();
 }
 
-function renderTable(){
+async function deny(id){
+ await fetch(`${API}?action=updateStatus&id=${id}&status=ไม่อนุมัติ&admin=${adminName}`);
+ loadData();
+}
+
+function render(){
  let html="";
- bookings.forEach(b=>{
+ viewData.forEach(b=>{
 
-  let statusClass="status-wait";
-  let statusText="รอ";
-  if(b.status==="อนุมัติ"){statusClass="status-ok";statusText="อนุมัติ"}
-  if(b.status==="ไม่อนุมัติ"){statusClass="status-no";statusText="ไม่อนุมัติ"}
+  let badge="<span class='badge wait'>รอ</span>";
+  if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
+  if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
 
   let action=b.approvedBy||"-";
-
   if(admin && b.status==="รอ"){
-   action=`<button class='green' onclick="updateStatus('${b.id}','อนุมัติ')">อนุมัติ</button>
-           <button class='red' onclick="updateStatus('${b.id}','ไม่อนุมัติ')">ไม่อนุมัติ</button>`;
+   action=`<button class='green' onclick='approve("${b.id}")'>อนุมัติ</button>
+           <button class='red' onclick='deny("${b.id}")'>ไม่อนุมัติ</button>`;
   }
 
   html+=`<tr>
@@ -152,7 +170,7 @@ function renderTable(){
    <td>${b.project}</td>
    <td>${b.driver}</td>
    <td>${b.start}-${b.end}</td>
-   <td class='${statusClass}'>${statusText}</td>
+   <td>${badge}</td>
    <td>${action}</td>
   </tr>`;
  });
@@ -160,31 +178,41 @@ function renderTable(){
  document.getElementById("tb").innerHTML=html;
 }
 
+function filterData(){
+ const fc=document.getElementById("fcar").value;
+ const fd=document.getElementById("fdriver").value;
+ const fdt=document.getElementById("fdate").value;
+
+ viewData=bookings.filter(b=>{
+  return (!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt||b.date===fdt);
+ });
+ render();
+}
+
 function loginAdmin(){
  let p=prompt("รหัส");
  if(p==="11223344"){admin=true;adminName="จิรศักดิ์"}
  if(p==="12121212"){admin=true;adminName="จุติมา"}
  if(admin){
-  document.getElementById("loginBtn").style.display="none";
-  document.getElementById("logoutBtn").style.display="inline-block";
-  document.getElementById("exportBtn").style.display="inline-block";
+  loginBtn.style.display="none";
+  logoutBtn.style.display="inline-block";
+  exportBtn.style.display="inline-block";
  }
- renderTable();
+ render();
 }
 
 function logoutAdmin(){
- admin=false;
- adminName="";
- document.getElementById("loginBtn").style.display="inline-block";
- document.getElementById("logoutBtn").style.display="none";
- document.getElementById("exportBtn").style.display="none";
- renderTable();
+ admin=false;adminName="";
+ loginBtn.style.display="inline-block";
+ logoutBtn.style.display="none";
+ exportBtn.style.display="none";
+ render();
 }
 
 function exportCSV(){
- let csv="date,car,project,driver,p1,p2,start,end,status,approvedBy\n";
+ let csv="date,car,project,driver,start,end,status\n";
  bookings.forEach(b=>{
-  csv+=`${b.date},${b.car},${b.project},${b.driver},${b.p1},${b.p2},${b.start},${b.end},${b.status},${b.approvedBy}\n`;
+  csv+=`${b.date},${b.car},${b.project},${b.driver},${b.start},${b.end},${b.status}\n`;
  });
  let blob=new Blob([csv]);
  let a=document.createElement("a");
