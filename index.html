@@ -250,6 +250,16 @@ function formatTime(t){
  return `${h.padStart(2,"0")}:${m.padStart(2,"0")}`;
 }
 
+async function deleteRow(id){
+ if(!confirm("ลบรายการนี้ ?")) return;
+ try{
+  await fetch(`${API}?action=delete&id=${id}`);
+  loadData();
+ }catch(e){
+  alert("ลบไม่สำเร็จ");
+ }
+}
+
 window.onload=loadData;
 
 </script>
