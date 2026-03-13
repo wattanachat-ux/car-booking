@@ -110,8 +110,15 @@ const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
 async function loadData(){
- const r=await fetch(API+"?action=get");
- bookings=await r.json();
+ const r=await fetch(API+"?action=get",{method:"GET",mode:"cors"});
+ const text=await r.text();
+ try{
+  bookings=JSON.parse(text);
+ }catch(e){
+  console.error("API RESPONSE NOT JSON:",text);
+  alert("ดึงข้อมูลจาก Sheet ไม่ได้ — ดู Console");
+  bookings=[];
+ }
  viewData=[...bookings];
  render();
  renderDash();
