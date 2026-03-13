@@ -60,7 +60,7 @@ button.gray{background:#555}
 <table class="table">
 <thead>
 <tr>
-<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>เวลา</th><th>สถานะ</th><th>จัดการ</th>
+<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>เวลา</th><th>สถานะ</th><th>อนุมัติ</th>
 </tr>
 </thead>
 <tbody id="tb"></tbody>
@@ -110,7 +110,7 @@ const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
 async function loadData(){
- const r=await fetch(API);
+ const r=await fetch(API+"?action=get");
  bookings=await r.json();
  viewData=[...bookings];
  render();
@@ -148,25 +148,13 @@ async function saveBooking(){
 }
 
 async function approve(id){
-
- // 🔴 กันอนุมัติรถซ้ำวันเดียวกัน
  const row = bookings.find(b=>b.id==id);
  if(!row) return;
 
- const dup = bookings.find(b=>
-   b.date===row.date &&
-   b.car===row.car &&
-   b.status==="อนุมัติ"
- );
-
- if(dup){
-   alert("รถคันนี้ถูกอนุมัติไปแล้วในวันนี้");
-   return;
- }
+ const dup = bookings.find(b=> b.date===row.date && b.car===row.car && b.status==="อนุมัติ");
+ if(dup){ alert("รถคันนี้ถูกอนุมัติไปแล้วในวันนี้"); return; }
 
  await fetch(`${API}?action=updateStatus&id=${id}&status=อนุมัติ&admin=${adminName}`);
- loadData();
-}?action=updateStatus&id=${id}&status=อนุมัติ&admin=${adminName}`);
  loadData();
 }
 
@@ -192,7 +180,7 @@ function render(){
   if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
   if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
 
-  let action=b.approvedBy||"-";
+  let action=b.approvedBy ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approvedBy}</span>` : "-";
 
   if(admin){
     if(b.status==="รอ" || b.status==="รออนุมัติ"){
