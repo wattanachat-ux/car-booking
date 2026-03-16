@@ -31,7 +31,6 @@ button.purple{background:#7b2cff}
 
 <div class="card">
 <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
-
 <div class="grid">
 <div><label>วันที่</label><input type="date" id="date" onchange="lockCarDropdown();renderDashboard();renderSummary()"></div>
 <div><label>ทะเบียนรถ</label><select id="car"></select></div>
@@ -42,17 +41,14 @@ button.purple{background:#7b2cff}
 <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
 <div><label>เวลาจบ</label><input type="time" id="end"></div>
 </div>
-
 <br>
 <button onclick="saveBooking()" id="saveBtn">บันทึก</button>
 <button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
 <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
 <button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
 <span id="loading">กำลังประมวลผล...</span>
-
 <div class="dashboard" id="dash"></div>
 <div class="summary" id="summary"></div>
-
 <div class="filterBox">
 <b>ค้นหาข้อมูล (Filter)</b>
 <div class="grid">
@@ -62,12 +58,9 @@ button.purple{background:#7b2cff}
 <button onclick="applyFilter()">ค้นหา</button>
 </div>
 </div>
-
 <table class="table">
 <thead>
-<tr>
-<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ/จัดการ</th>
-</tr>
+<tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ</th></tr>
 </thead>
 <tbody id="tb"></tbody>
 </table>
@@ -76,8 +69,11 @@ button.purple{background:#7b2cff}
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
-
 let admin=false; let adminName=""; let bookings=[]; let filtered=[]; let page=1; let perPage=10;
+
+// กำหนดวันนี้เพื่อใช้ล็อควันย้อนหลัง
+const todayStr = new Date().toISOString().split("T")[0];
+document.getElementById("date").min = todayStr;
 
 const cars=["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
 const people=["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
@@ -119,8 +115,17 @@ function lockCarDropdown() {
 async function saveBooking() {
     const d = document.getElementById('date').value;
     if(!d) return alert("กรุณาเลือกวันที่");
+    if(d < todayStr) return alert("ห้ามเลือกวันย้อนหลัง!");
+    
+    // ตรวจสอบชื่อผู้ร่วมเดินทาง
+    const dr = driverSel.value;
+    const p1 = p1Sel.value;
+    const p2 = p2Sel.value;
+    if((p1 !== "" && p1 === dr) || (p2 !== "" && p2 === dr)) return alert("ชื่อผู้ร่วมเดินทางซ้ำกับผู้ขับ!");
+    if(p1 !== "" && p2 !== "" && p1 === p2) return alert("ชื่อผู้ร่วมเดินทางซ้ำกัน!");
+
     document.getElementById('loading').style.display="inline";
-    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2Sel.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
+    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(dr)}&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
     await fetch(url);
     document.getElementById('loading').style.display="none";
     loadData();
@@ -151,19 +156,22 @@ function renderTable() {
         let sText = b.status || "รออนุมัติ";
         let sClass = sText === "อนุมัติ" ? "status-ok" : (sText === "ไม่อนุมัติ" ? "status-no" : "status-wait");
         
-        // ส่วนการแสดงผล "ผู้อนุมัติ/จัดการ"
+        // แสดงชื่อผู้ร่วมเดินทาง ถ้าว่างให้โชว์ "ไม่มีผู้ร่วมเดินทาง"
+        let p1Display = (b.p1 && b.p1 !== "") ? b.p1 : "ไม่มีผู้ร่วมเดินทาง";
+        let p2Display = (b.p2 && b.p2 !== "") ? b.p2 : "ไม่มีผู้ร่วมเดินทาง";
+        let pText = (b.p1 == "" && b.p2 == "") ? "ไม่มีผู้ร่วมเดินทาง" : `${p1Display} / ${p2Display}`;
+
         let actionCell = "";
         if (admin && (sText === "รออนุมัติ" || sText === "รอ")) {
             actionCell = `<button class="green" onclick="updateStatus('${b.id}','อนุมัติ')">อนุมัติ</button> 
                           <button class="red" onclick="updateStatus('${b.id}','ไม่อนุมัติ')">ปฏิเสธ</button>`;
         } else {
-            // ถ้าอนุมัติแล้ว หรือ Admin ไม่ได้ล็อกอิน ให้โชว์ชื่อคนอนุมัติ (ถ้ามี)
             actionCell = b.approvedBy ? `<span style="color:#0a8a2a; font-weight:bold;">✅ ${b.approvedBy}</span>` : "-";
         }
 
         html += `<tr>
             <td>${formatDate(b.date)}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
-            <td>${b.p1}${b.p2 && b.p2 !== "-- ไม่มีผู้ร่วมเดินทาง --" ? ", "+b.p2 : ""}</td>
+            <td>${pText}</td>
             <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
             <td class="${sClass}">${sText}</td><td>${actionCell}</td>
         </tr>`;
@@ -194,9 +202,7 @@ function loginAdmin() {
         renderTable();
     }
 }
-
 function logoutAdmin() { admin=false; document.getElementById('loginBtn').style.display="inline-block"; document.getElementById('logoutBtn').style.display="none"; document.getElementById('exportBtn').style.display="none"; renderTable(); }
-
 function applyFilter() {
     const fc = document.getElementById('filterCar').value;
     const fd = document.getElementById('filterDriver').value;
@@ -204,21 +210,18 @@ function applyFilter() {
     filtered = bookings.filter(b => (!fc || b.car === fc) && (!fd || b.driver === fd) && (!fdt || b.date.includes(fdt)));
     page = 1; renderTable();
 }
-
 function renderPagination() {
     let total = Math.ceil(filtered.length / perPage);
     let html = `<button onclick="goPage(${page-1})">ก่อนหน้า</button> หน้า ${page} / ${total} <button onclick="goPage(${page+1})">ถัดไป</button>`;
     document.getElementById('page').innerHTML = total > 1 ? html : "";
 }
 function goPage(p) { if(p > 0 && p <= Math.ceil(filtered.length/perPage)) { page = p; renderTable(); } }
-
 function exportCSV() {
     let csv = "\uFEFFวันที่,รถ,โครงการ,ผู้ขับ,เริ่ม,จบ,สถานะ,ผู้อนุมัติ\n";
     bookings.forEach(b => csv += `${formatDate(b.date)},${b.car},${b.project},${b.driver},${b.start},${b.end},${b.status},${b.approvedBy}\n`);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "จองรถ_GutsIOC.csv"; link.click();
 }
-
 window.onload = loadData;
 </script>
 </body>
