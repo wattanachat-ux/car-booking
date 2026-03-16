@@ -55,7 +55,7 @@ button.purple{background:#7b2cff}
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec"; // *** วาง URL จาก Apps Script ตรงนี้ ***
+const API = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec"; 
 
 let admin = false;
 let adminName = "";
@@ -64,7 +64,6 @@ let bookings = [];
 const cars = ["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
 const people = ["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
 
-// Setup Dropdowns
 const carSel = document.getElementById('car');
 const driverSel = document.getElementById('driver');
 const p1Sel = document.getElementById('p1');
@@ -76,6 +75,22 @@ people.forEach(p => driverSel.add(new Option(p,p)));
     s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --", ""));
     people.forEach(p => s.add(new Option(p,p)));
 });
+
+// ฟังก์ชันสำหรับจัดรูปแบบเวลาให้เป็น 00:00 (24hr)
+function formatTime(t) {
+    if (!t || t === "") return "--:--";
+    let parts = t.split(':');
+    let h = parts[0].padStart(2, '0');
+    let m = parts[1] ? parts[1].padStart(2, '0') : "00";
+    return `${h}:${m}`;
+}
+
+// ฟังก์ชันสำหรับจัดรูปแบบวันที่ให้อ่านง่ายขึ้น (เช่น 16/03/2026)
+function formatDate(d) {
+    if (!d) return "-";
+    let [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
+}
 
 async function loadData() {
     const res = await fetch(API);
@@ -90,7 +105,7 @@ async function saveBooking() {
     document.getElementById('loading').style.display = "inline";
     document.getElementById('saveBtn').disabled = true;
 
-    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
+    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2Sel.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
 
     await fetch(url);
     alert("บันทึกเรียบร้อย!");
@@ -108,13 +123,6 @@ async function updateStatus(id, status) {
     loadData();
 }
 
-// ฟังก์ชันช่วยทำให้เวลาเป็น 00:00 (24hr)
-function formatTime(t) {
-    if (!t) return "--:--";
-    let [h, m] = t.split(':');
-    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
-}    
-    
 function renderTable() {
     let html = "";
     bookings.forEach(b => {
@@ -128,9 +136,10 @@ function renderTable() {
                           <button class="red" onclick="updateStatus('${b.id}', 'ไม่อนุมัติ')">ปฏิเสธ</button>`;
         }
 
+        // ใช้ formatDate และ formatTime ในการแสดงผล
         html += `<tr>
-            <td>${b.date}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
-            <td>${b.start}-${b.end}</td><td>${statusBadge}</td><td>${actionHtml}</td>
+            <td>${formatDate(b.date)}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
+            <td>${formatTime(b.start)} - ${formatTime(b.end)}</td><td>${statusBadge}</td><td>${actionHtml}</td>
         </tr>`;
     });
     document.getElementById('tb').innerHTML = html;
