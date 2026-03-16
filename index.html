@@ -108,6 +108,13 @@ async function updateStatus(id, status) {
     loadData();
 }
 
+// ฟังก์ชันช่วยทำให้เวลาเป็น 00:00 (24hr)
+function formatTime(t) {
+    if (!t) return "--:--";
+    let [h, m] = t.split(':');
+    return `${h.padStart(2, '0')}:${m.padStart(2, '0')}`;
+}    
+    
 function renderTable() {
     let html = "";
     bookings.forEach(b => {
