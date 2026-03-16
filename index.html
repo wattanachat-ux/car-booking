@@ -1,93 +1,114 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<title>เอกสารเบิกรถ Guts IOC</title>
-<style>
-    body{font-family:Arial;background:#eef2f7;padding:20px}
-    .card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
-    .grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-    input,select{padding:8px;border:1px solid #ccc;border-radius:8px;width:90%}
-    button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px;margin-right:5px}
-    button.red{background:#e5533d}
-    button.green{background:#0a8a2a}
-    button.purple{background:#7b2cff}
-    .table{width:100%;border-collapse:collapse;margin-top:20px;background:#fff}
-    .table th,.table td{border:1px solid #ccc;padding:8px;text-align:center}
-    .status-ok{color:#0a8a2a;font-weight:bold}
-    .status-wait{color:#d18b00;font-weight:bold}
-    .status-no{color:#c10000;font-weight:bold}
-    .dashboard{margin-top:20px;padding:12px;background:#f5f7fb;border-radius:8px}
-    .busy{color:#c10000;font-weight:bold}
-    #loading{color:#2d6cdf;font-weight:bold;display:none;margin-left:10px}
-    .summary{margin-top:10px;font-weight:bold}
-    .filterBox{margin-top:20px;background:#f1f3f8;padding:15px;border-radius:8px}
-    .pagination{margin-top:15px;text-align:center}
-    .pagination button{margin:2px;padding:6px 12px;background:#fff;color:#2d6cdf;border:1px solid #2d6cdf}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เอกสารเบิกรถ Guts IOC</title>
+    <style>
+        body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:#eef2f7;padding:20px;color:#333}
+        .card{background:#fff;padding:25px;border-radius:15px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+        h2{color:#2d6cdf;margin-top:0;display:flex;align-items:center;gap:10px}
+        .grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:15px;margin-bottom:20px}
+        .input-group{display:flex;flex-direction:column;gap:5px}
+        input,select{padding:10px;border:1px solid #ddd;border-radius:8px;font-size:14px;outline:none;transition:0.3s}
+        input:focus,select:focus{border-color:#2d6cdf;box-shadow:0 0 5px rgba(45,108,223,0.2)}
+        .btn-group{margin-bottom:20px;display:flex;gap:10px;flex-wrap:wrap}
+        button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:12px 20px;transition:0.3s}
+        button:hover{opacity:0.9;transform:translateY(-1px)}
+        button.red{background:#e5533d}
+        button.green{background:#0a8a2a}
+        button.purple{background:#7b2cff}
+        button.gray{background:#888}
+        .table-container{overflow-x:auto;background:#fff;border-radius:10px;border:1px solid #eee}
+        .table{width:100%;border-collapse:collapse;min-width:1000px}
+        .table th{background:#f8f9fa;padding:12px;border-bottom:2px solid #eee;color:#666;font-size:14px}
+        .table td{padding:12px;border-bottom:1px solid #eee;text-align:center;font-size:14px}
+        .status-ok{color:#0a8a2a;background:#e6f4ea;padding:4px 8px;border-radius:5px;font-weight:bold}
+        .status-wait{color:#d18b00;background:#fff4e5;padding:4px 8px;border-radius:5px;font-weight:bold}
+        .status-no{color:#c10000;background:#fdeaea;padding:4px 8px;border-radius:5px;font-weight:bold}
+        .dashboard{margin-bottom:20px;padding:15px;background:#f0f7ff;border-radius:10px;border-left:5px solid #2d6cdf}
+        .summary{font-weight:bold;margin-bottom:15px;color:#444}
+        .filterBox{background:#f8f9fa;padding:20px;border-radius:10px;margin-bottom:20px;border:1px solid #eee}
+        #loading{color:#2d6cdf;font-weight:bold;display:none}
+        .pagination{margin-top:20px;text-align:center;display:flex;justify-content:center;gap:10px;align-items:center}
+    </style>
 </head>
 <body>
 
 <div class="card">
     <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
+    
     <div class="grid">
-        <div><label>วันที่</label><br><input type="date" id="date" onchange="lockCarDropdown();renderDashboard();renderSummary()"></div>
-        <div><label>ทะเบียนรถ</label><br><select id="car"></select></div>
-        <div><label>โครงการ</label><br><input id="project" placeholder="ระบุชื่อโครงการ"></div>
-        <div><label>ผู้ขับ</label><br><select id="driver"></select></div>
-        <div><label>ผู้ร่วมเดินทาง 1</label><br><select id="p1"></select></div>
-        <div><label>ผู้ร่วมเดินทาง 2</label><br><select id="p2"></select></div>
-        <div><label>เวลาเริ่ม</label><br><input type="time" id="start"></div>
-        <div><label>เวลาจบ</label><br><input type="time" id="end"></div>
+        <div class="input-group"><label>วันที่เดินทาง</label><input type="date" id="date" onchange="lockCarDropdown();renderDashboard();renderSummary()"></div>
+        <div class="input-group"><label>ทะเบียนรถ</label><select id="car"></select></div>
+        <div class="input-group"><label>โครงการ/วัตถุประสงค์</label><input id="project" placeholder="ระบุรายละเอียด"></div>
+        <div class="input-group"><label>ผู้ขับขี่</label><select id="driver"></select></div>
+        <div class="input-group"><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
+        <div class="input-group"><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+        <div class="input-group"><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+        <div class="input-group"><label>เวลาจบ</label><input type="time" id="end"></div>
     </div>
-    <br>
-    <button onclick="saveBooking()" id="saveBtn">บันทึกการจอง</button>
-    <button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
-    <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
-    <button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
-    <span id="loading">⌛ กำลังประมวลผล...</span>
 
-    <div class="dashboard" id="dash"></div>
+    <div class="btn-group">
+        <button onclick="saveBooking()" id="saveBtn">ยืนยันการจอง</button>
+        <button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">ดาวน์โหลดไฟล์ CSV</button>
+        <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
+        <button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
+        <span id="loading">⌛ กำลังดำเนินการ...</span>
+    </div>
+
+    <div class="dashboard" id="dash">💡 กรุณาเลือกวันที่เดินทางเพื่อตรวจสอบสถานะรถ</div>
     <div class="summary" id="summary"></div>
 
     <div class="filterBox">
-        <b>🔍 ค้นหาและคัดกรองข้อมูล</b>
+        <b style="display:block;margin-bottom:10px">🔍 ตัวกรองข้อมูล (Filter)</b>
         <div class="grid">
             <select id="filterCar"></select>
             <select id="filterDriver"></select>
             <input type="date" id="filterDate">
-            <button onclick="applyFilter()">ค้นหา</button>
-            <button onclick="location.reload()" style="background:#888">ล้างค่า</button>
+            <div style="display:flex;gap:5px">
+                <button onclick="applyFilter()" style="flex:1">ค้นหา</button>
+                <button onclick="location.reload()" class="gray">ล้างค่า</button>
+            </div>
         </div>
     </div>
 
-    <table class="table">
-        <thead>
-            <tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ</th></tr>
-        </thead>
-        <tbody id="tb"></tbody>
-    </table>
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>วันที่</th><th>ทะเบียนรถ</th><th>โครงการ</th><th>ผู้ขับ</th>
+                    <th>ผู้ร่วมเดินทาง</th><th>เวลาใช้รถ</th><th>สถานะ</th><th>ผู้อนุมัติ</th>
+                </tr>
+            </thead>
+            <tbody id="tb"></tbody>
+        </table>
+    </div>
     <div class="pagination" id="page"></div>
 </div>
 
 <script>
-const API = "YOUR_API_URL_HERE"; // *** วาง URL ของคุณที่นี่ ***
+// ⚠️ แก้ไข: นำ URL ที่ได้จากการ Deploy มาวางในเครื่องหมายคำพูดด้านล่างนี้
+const API = "วาง_URL_Web_App_ของคุณตรงนี้"; 
 
 let admin=false; let adminName=""; let bookings=[]; let filtered=[]; let page=1; let perPage=10;
 
+// กำหนดให้เลือกวันย้อนหลังไม่ได้
 const todayStr = new Date().toISOString().split("T")[0];
 document.getElementById("date").min = todayStr;
 
 const cars=["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
 const people=["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
 
+// ตั้งค่า Dropdown ต่างๆ
 const carSel=document.getElementById('car');
 const driverSel=document.getElementById('driver');
 const p1Sel=document.getElementById('p1');
 const p2Sel=document.getElementById('p2');
 
 cars.forEach(c=>{ carSel.add(new Option(c,c)); document.getElementById('filterCar').add(new Option(c,c)); });
-document.getElementById('filterCar').add(new Option("รถทั้งหมด",""),0);
+document.getElementById('filterCar').add(new Option("แสดงรถทุกคัน",""),0);
+
 people.forEach(p=>{ 
     driverSel.add(new Option(p,p)); 
     document.getElementById('filterDriver').add(new Option(p,p));
@@ -96,20 +117,13 @@ people.forEach(p=>{
 });
 p1Sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""),0); p1Sel.selectedIndex=0;
 p2Sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""),0); p2Sel.selectedIndex=0;
-document.getElementById('filterDriver').add(new Option("คนขับทั้งหมด",""),0);
+document.getElementById('filterDriver').add(new Option("แสดงคนขับทุกคน",""),0);
 
-// ฟังก์ชันล้างค่าวันที่/เวลาที่เพี้ยน
-function formatDisplayDate(val) {
-    if(!val) return "-";
-    let s = val.toString();
-    if(s.includes('T')) return s.split('T')[0].split('-').reverse().join('/');
-    return s;
-}
-
-function formatDisplayTime(val) {
+// --- ฟังก์ชันจัดการเวลาที่หายขาดแน่นอน ---
+function formatTime(val) {
     if(!val) return "--:--";
-    let s = val.toString();
-    // ถ้ามีวันที่ 1899 หรือ ISO ติดมา ให้ดึงเอาแค่เลขเวลา 00:00
+    let s = val.toString().trim();
+    // ค้นหาเฉพาะรูปแบบ 00:00 โดยไม่สนวันที่ 1899 หรือ ISO String
     let match = s.match(/(\d{1,2}:\d{2})/);
     return match ? match[1] : s;
 }
@@ -120,13 +134,14 @@ async function loadData() {
         const res = await fetch(API);
         bookings = await res.json();
         renderAll();
-    } catch(e) { alert("เกิดข้อผิดพลาดในการดึงข้อมูล"); }
+    } catch(e) { alert("ดึงข้อมูลไม่สำเร็จ กรุณาตรวจสอบ URL API หรือการ Deploy"); }
     document.getElementById('loading').style.display="none";
 }
 
 function lockCarDropdown() {
     const d = document.getElementById('date').value;
     Array.from(carSel.options).forEach(opt => {
+        // รถจะล็อคเฉพาะรายการที่ "อนุมัติ" แล้วเท่านั้น
         const isBusy = bookings.some(b => b.date && b.date.includes(d) && b.car === opt.value && b.status === "อนุมัติ");
         opt.disabled = isBusy;
     });
@@ -136,15 +151,15 @@ async function saveBooking() {
     const d = document.getElementById('date').value;
     const st = document.getElementById('start').value;
     const en = document.getElementById('end').value;
-    if(!d || !st || !en) return alert("กรุณาระบุ วันที่ และ เวลาให้ครบถ้วน!");
-    if(d < todayStr) return alert("ห้ามเลือกวันย้อนหลัง!");
-    
+    if(!d || !st || !en) return alert("กรุณาระบุ วันที่ และ เวลา ให้ครบถ้วน");
+    if(d < todayStr) return alert("ไม่สามารถจองวันย้อนหลังได้");
+
     document.getElementById('loading').style.display="inline";
     const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2Sel.value)}&start=${st}&end=${en}`;
     await fetch(url);
     document.getElementById('loading').style.display="none";
-    alert("ส่งคำขอจองรถแล้ว รอการอนุมัติ");
-    location.reload();
+    alert("บันทึกการจองสำเร็จ! กรุณารอการอนุมัติ");
+    loadData();
 }
 
 async function updateStatus(id, status) {
@@ -170,8 +185,8 @@ function renderTable() {
         let s = b.status || "รออนุมัติ";
         let sClass = s === "อนุมัติ" ? "status-ok" : (s === "ไม่อนุมัติ" ? "status-no" : "status-wait");
         
-        let p1 = (b.p1 && b.p1.includes("ไม่มี") === false) ? b.p1 : "";
-        let p2 = (b.p2 && b.p2.includes("ไม่มี") === false) ? b.p2 : "";
+        let p1 = (b.p1 && !b.p1.includes("ไม่มี")) ? b.p1 : "";
+        let p2 = (b.p2 && !b.p2.includes("ไม่มี")) ? b.p2 : "";
         let pDisplay = (p1 || p2) ? (p1 + (p1 && p2 ? ", " : "") + p2) : "ไม่มีผู้ร่วมเดินทาง";
         
         let action = "";
@@ -183,13 +198,13 @@ function renderTable() {
         }
 
         html += `<tr>
-            <td>${formatDisplayDate(b.date)}</td>
-            <td>${b.car}</td>
+            <td>${b.date}</td>
+            <td style="font-weight:bold">${b.car}</td>
             <td style="text-align:left">${b.project || "-"}</td>
             <td>${b.driver}</td>
-            <td>${pDisplay}</td>
-            <td>${formatDisplayTime(b.start)} - ${formatDisplayTime(b.end)}</td>
-            <td class="${sClass}">${s}</td>
+            <td style="color:#666;font-size:12px">${pDisplay}</td>
+            <td style="font-family:monospace">${formatTime(b.start)} - ${formatTime(b.end)}</td>
+            <td><span class="${sClass}">${s}</span></td>
             <td>${action}</td>
         </tr>`;
     });
@@ -199,15 +214,17 @@ function renderTable() {
 
 function renderDashboard() {
     const d = document.getElementById('date').value;
-    if(!d) { document.getElementById('dash').innerHTML = "💡 กรุณาเลือกวันที่เพื่อเช็คสถานะรถว่าง"; return; }
+    if(!d) return;
     const busy = bookings.filter(b => b.date && b.date.includes(d) && b.status === "อนุมัติ").map(b => b.car);
-    document.getElementById('dash').innerHTML = busy.length ? `🚫 รถที่ไม่ว่างวันนี้: <span class="busy">${busy.join(", ")}</span>` : "✅ รถว่างทุกคันในวันที่เลือก";
+    document.getElementById('dash').innerHTML = busy.length ? 
+        `🚫 <b>รถที่ไม่ว่างวันนี้:</b> <span style="color:red">${busy.join(", ")}</span>` : 
+        "✅ <b>รถว่างทุกคัน:</b> สามารถเลือกจองได้ตามต้องการ";
 }
 
 function renderSummary() {
     const d = document.getElementById('date').value || todayStr;
     const count = (s) => bookings.filter(b => b.date && b.date.includes(d) && b.status === s).length;
-    document.getElementById('summary').innerHTML = `📊 สรุปรายการ (${formatDisplayDate(d)}): อนุมัติ ${count("อนุมัติ")} | ปฏิเสธ ${count("ไม่อนุมัติ")}`;
+    document.getElementById('summary').innerHTML = `📊 สรุปรายงานประจำวันที่ ${d}: อนุมัติแล้ว ${count("อนุมัติ")} รายการ | รอการอนุมัติ ${count("รออนุมัติ")} รายการ`;
 }
 
 function applyFilter() {
@@ -227,26 +244,27 @@ function loginAdmin() {
         document.getElementById('logoutBtn').style.display="inline-block";
         document.getElementById('exportBtn').style.display="inline-block";
         renderTable();
-    } else if(p !== null) { alert("รหัสผ่านไม่ถูกต้อง!"); }
+    } else if(p !== null) { alert("รหัสผ่านไม่ถูกต้อง"); }
 }
 
-function logoutAdmin() { admin=false; location.reload(); }
+function logoutAdmin() { location.reload(); }
 
 function renderPagination() {
     let total = Math.ceil(filtered.length / perPage);
-    document.getElementById('page').innerHTML = total > 1 ? `<button onclick="goPage(${page-1})">ก่อนหน้า</button> [ หน้า ${page} / ${total} ] <button onclick="goPage(${page+1})">ถัดไป</button>` : "";
+    document.getElementById('page').innerHTML = total > 1 ? 
+        `<button onclick="goPage(${page-1})" class="gray">ก่อนหน้า</button> หน้า ${page} / ${total} <button onclick="goPage(${page+1})" class="gray">ถัดไป</button>` : "";
 }
 
 function goPage(p) { if(p > 0 && p <= Math.ceil(filtered.length/perPage)) { page = p; renderTable(); } }
 
 function exportCSV() {
-    let csv = "\uFEFFวันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วมเดินทาง,เริ่ม,จบ,สถานะ,ผู้อนุมัติ\n";
+    let csv = "\uFEFFวันที่,ทะเบียนรถ,โครงการ,ผู้ขับ,ผู้ร่วมเดินทาง,เวลาเริ่ม,เวลาจบ,สถานะ,ผู้อนุมัติ\n";
     filtered.forEach(b => {
-        csv += `${formatDisplayDate(b.date)},${b.car},"${b.project}",${b.driver},"${b.p1} ${b.p2}",${formatDisplayTime(b.start)},${formatDisplayTime(b.end)},${b.status},${b.approvedBy}\n`;
+        csv += `${b.date},${b.car},"${b.project}",${b.driver},"${b.p1} ${b.p2}",${formatTime(b.start)},${formatTime(b.end)},${b.status},${b.approvedBy}\n`;
     });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    link.download = "Report_Booking.csv";
+    link.download = `Booking_Report_${new Date().toLocaleDateString()}.csv`;
     link.click();
 }
 
