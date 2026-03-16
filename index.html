@@ -29,42 +29,42 @@
 <body>
 
 <div class="card">
-<h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
-<div class="grid">
-    <div><label>วันที่</label><input type="date" id="date" onchange="lockCarDropdown();renderDashboard();renderSummary()"></div>
-    <div><label>ทะเบียนรถ</label><select id="car"></select></div>
-    <div><label>โครงการ</label><input id="project"></div>
-    <div><label>ผู้ขับ</label><select id="driver"></select></div>
-    <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
-    <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
-    <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
-    <div><label>เวลาจบ</label><input type="time" id="end"></div>
-</div>
-<br>
-<button onclick="saveBooking()" id="saveBtn">บันทึก</button>
-<button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
-<button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
-<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
-<span id="loading">กำลังประมวลผล...</span>
+    <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
+    <div class="grid">
+        <div><label>วันที่</label><input type="date" id="date" onchange="lockCarDropdown();renderDashboard();renderSummary()"></div>
+        <div><label>ทะเบียนรถ</label><select id="car"></select></div>
+        <div><label>โครงการ</label><input id="project"></div>
+        <div><label>ผู้ขับ</label><select id="driver"></select></div>
+        <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
+        <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+        <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+        <div><label>เวลาจบ</label><input type="time" id="end"></div>
+    </div>
+    <br>
+    <button onclick="saveBooking()" id="saveBtn">บันทึก</button>
+    <button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
+    <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
+    <button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
+    <span id="loading">กำลังประมวลผล...</span>
 
-<div class="dashboard" id="dash"></div>
-<div class="summary" id="summary"></div>
+    <div class="dashboard" id="dash"></div>
+    <div class="summary" id="summary"></div>
 
-<div class="filterBox">
-<b>ค้นหาข้อมูล (Filter)</b>
-<div class="grid">
-    <select id="filterCar"></select>
-    <select id="filterDriver"></select>
-    <input type="date" id="filterDate">
-    <button onclick="applyFilter()">ค้นหา</button>
-</div>
-</div>
+    <div class="filterBox">
+        <b>ค้นหาข้อมูล (Filter)</b>
+        <div class="grid">
+            <select id="filterCar"></select>
+            <select id="filterDriver"></select>
+            <input type="date" id="filterDate">
+            <button onclick="applyFilter()">ค้นหา</button>
+        </div>
+    </div>
 
-<table class="table">
-<thead><tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ</th></tr></thead>
-<tbody id="tb"></tbody>
-</table>
-<div class="pagination" id="page"></div>
+    <table class="table">
+        <thead><tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ</th></tr></thead>
+        <tbody id="tb"></tbody>
+    </table>
+    <div class="pagination" id="page"></div>
 </div>
 
 <script>
@@ -89,9 +89,26 @@ p1Sel.add(new Option("-- ไม่มีผู้ร่วมเดินทา�
 p2Sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""),0); p2Sel.selectedIndex=0;
 document.getElementById('filterDriver').add(new Option("ทั้งหมด",""),0);
 
-// ปรับปรุงฟังก์ชันแสดงผลเวลาและวันที่ให้แม่นยำขึ้น
-function formatTime(t) { return t ? t.toString().substring(0, 5) : "--:--"; }
-function formatDate(d) { return d ? d.toString().split('T')[0].split('-').reverse().join('/') : "-"; }
+// --- ฟังก์ชันแก้ไขปัญหาเวลา ---
+function cleanTime(t) {
+    if (!t) return "--:--";
+    let str = t.toString();
+    // ถ้าเป็น ISO format (มี T) ให้ตัดเอาเฉพาะหลัง T
+    if (str.includes('T')) return str.split('T')[1].substring(0, 5);
+    // ถ้าเป็นเวลาปกติ (HH:MM:SS) ให้เอาแค่ HH:MM
+    return str.substring(0, 5);
+}
+
+function cleanDate(d) {
+    if (!d) return "-";
+    let str = d.toString();
+    // ถ้ามาเป็น YYYY-MM-DD ให้สลับเป็น DD/MM/YYYY
+    if (str.includes('-')) {
+        let parts = str.split('T')[0].split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return str;
+}
 
 async function loadData() {
     const res = await fetch(API);
@@ -145,7 +162,8 @@ function renderTable() {
             actionCell = `<button class="green" onclick="updateStatus('${b.id}','อนุมัติ')">อนุมัติ</button> <button class="red" onclick="updateStatus('${b.id}','ไม่อนุมัติ')">ปฏิเสธ</button>`;
         }
         
-        html += `<tr><td>${formatDate(b.date)}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td><td>${pDisplay}</td><td>${formatTime(b.start)} - ${formatTime(b.end)}</td><td class="${b.status==='อนุมัติ'?'status-ok':(b.status==='ไม่อนุมัติ'?'status-no':'status-wait')}">${b.status||'รอ'}</td><td>${actionCell}</td></tr>`;
+        // ใช้ cleanDate และ cleanTime ตรงนี้
+        html += `<tr><td>${cleanDate(b.date)}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td><td>${pDisplay}</td><td>${cleanTime(b.start)} - ${cleanTime(b.end)}</td><td class="${b.status==='อนุมัติ'?'status-ok':(b.status==='ไม่อนุมัติ'?'status-no':'status-wait')}">${b.status||'รอ'}</td><td>${actionCell}</td></tr>`;
     });
     document.getElementById('tb').innerHTML = html;
     renderPagination();
@@ -184,7 +202,7 @@ function renderPagination() {
 function goPage(p) { if(p > 0 && p <= Math.ceil(filtered.length/perPage)) { page = p; renderTable(); } }
 function exportCSV() {
     let csv = "\uFEFFวันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วมเดินทาง,เริ่ม,จบ,สถานะ,ผู้อนุมัติ\n";
-    bookings.forEach(b => csv += `${formatDate(b.date)},${b.car},${b.project},${b.driver},${b.p1} ${b.p2},${b.start},${b.end},${b.status},${b.approvedBy}\n`);
+    bookings.forEach(b => csv += `${cleanDate(b.date)},${b.car},${b.project},${b.driver},${b.p1} ${b.p2},${cleanTime(b.start)},${cleanTime(b.end)},${b.status},${b.approvedBy}\n`);
     const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = "data.csv"; link.click();
 }
 window.onload = loadData;
