@@ -76,19 +76,26 @@ people.forEach(p => driverSel.add(new Option(p,p)));
     people.forEach(p => s.add(new Option(p,p)));
 });
 
-// ฟังก์ชันสำหรับจัดรูปแบบเวลาให้เป็น 00:00 (24hr)
+// แก้ไขใหม่: ฟังก์ชันจัดรูปแบบเวลาให้แสดงแค่ HH:mm
 function formatTime(t) {
     if (!t || t === "") return "--:--";
-    let parts = t.split(':');
-    let h = parts[0].padStart(2, '0');
-    let m = parts[1] ? parts[1].padStart(2, '0') : "00";
-    return `${h}:${m}`;
+    // ถ้ามีตัว T (เช่น 1899-12-30T06:32) ให้ตัดเอาหลัง T มาแค่ 5 หลัก
+    if (t.includes("T")) {
+        let timePart = t.split("T")[1];
+        return timePart.substring(0, 5);
+    }
+    // กรณีเป็นเวลาปกติ 06:32:00 ให้เอาแค่ 5 หลักแรก
+    return t.substring(0, 5);
 }
 
-// ฟังก์ชันสำหรับจัดรูปแบบวันที่ให้อ่านง่ายขึ้น (เช่น 16/03/2026)
+// แก้ไขใหม่: ฟังก์ชันจัดรูปแบบวันที่ให้แสดงแค่ DD/MM/YYYY
 function formatDate(d) {
-    if (!d) return "-";
-    let [y, m, day] = d.split('-');
+    if (!d || d === "") return "-";
+    // ถ้ามีตัว T (เช่น 2026-03-12T17:00) ให้ตัดเอาแค่หน้า T
+    let datePart = d.includes("T") ? d.split("T")[0] : d;
+    let [y, m, day] = datePart.split('-');
+    // กรณีปีอยู่ข้างหลัง (ถ้า Sheet ส่งมาแบบอื่น)
+    if (y.length < 4) return d; 
     return `${day}/${m}/${y}`;
 }
 
@@ -105,7 +112,7 @@ async function saveBooking() {
     document.getElementById('loading').style.display = "inline";
     document.getElementById('saveBtn').disabled = true;
 
-    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2Sel.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
+    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(driverSel.value)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
 
     await fetch(url);
     alert("บันทึกเรียบร้อย!");
@@ -136,7 +143,6 @@ function renderTable() {
                           <button class="red" onclick="updateStatus('${b.id}', 'ไม่อนุมัติ')">ปฏิเสธ</button>`;
         }
 
-        // ใช้ formatDate และ formatTime ในการแสดงผล
         html += `<tr>
             <td>${formatDate(b.date)}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
             <td>${formatTime(b.start)} - ${formatTime(b.end)}</td><td>${statusBadge}</td><td>${actionHtml}</td>
