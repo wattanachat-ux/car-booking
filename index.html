@@ -6,6 +6,7 @@
 <style>
     body{font-family:Arial;background:#eef2f7;padding:20px}
     .card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+    h2{margin-top:0}
     .grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
     input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
     button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
@@ -61,7 +62,9 @@
     </div>
 
     <table class="table">
-        <thead><tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ</th></tr></thead>
+        <thead>
+            <tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ</th></tr>
+        </thead>
         <tbody id="tb"></tbody>
     </table>
     <div class="pagination" id="page"></div>
@@ -69,6 +72,7 @@
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
+
 let admin=false; let adminName=""; let bookings=[]; let filtered=[]; let page=1; let perPage=10;
 
 const todayStr = new Date().toISOString().split("T")[0];
@@ -84,30 +88,39 @@ const p2Sel=document.getElementById('p2');
 
 cars.forEach(c=>{ carSel.add(new Option(c,c)); document.getElementById('filterCar').add(new Option(c,c)); });
 document.getElementById('filterCar').add(new Option("ทั้งหมด",""),0);
-people.forEach(p=>{ driverSel.add(new Option(p,p)); p1Sel.add(new Option(p,p)); p2Sel.add(new Option(p,p)); document.getElementById('filterDriver').add(new Option(p,p)); });
+people.forEach(p=>{ 
+    driverSel.add(new Option(p,p)); 
+    document.getElementById('filterDriver').add(new Option(p,p));
+    p1Sel.add(new Option(p,p));
+    p2Sel.add(new Option(p,p));
+});
 p1Sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""),0); p1Sel.selectedIndex=0;
 p2Sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""),0); p2Sel.selectedIndex=0;
 document.getElementById('filterDriver').add(new Option("ทั้งหมด",""),0);
 
-// --- ฟังก์ชันแก้ไขปัญหาเวลา ---
-function cleanTime(t) {
-    if (!t) return "--:--";
-    let str = t.toString();
-    // ถ้าเป็น ISO format (มี T) ให้ตัดเอาเฉพาะหลัง T
-    if (str.includes('T')) return str.split('T')[1].substring(0, 5);
-    // ถ้าเป็นเวลาปกติ (HH:MM:SS) ให้เอาแค่ HH:MM
-    return str.substring(0, 5);
-}
-
-function cleanDate(d) {
-    if (!d) return "-";
-    let str = d.toString();
-    // ถ้ามาเป็น YYYY-MM-DD ให้สลับเป็น DD/MM/YYYY
-    if (str.includes('-')) {
-        let parts = str.split('T')[0].split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+// ฟังก์ชันล้างข้อมูลวันที่และเวลาที่ได้รับจาก Google Sheets ให้เหลือแค่สิ่งที่ต้องการ
+function parseDateTime(val, type) {
+    if (!val) return type === 'date' ? "-" : "--:--";
+    let str = val.toString();
+    
+    // ถ้าเป็น ISO Format (มี T อยู่ข้างใน)
+    if (str.includes('T')) {
+        let parts = str.split('T');
+        if (type === 'date') {
+            let d = parts[0].split('-');
+            return `${d[2]}/${d[1]}/${d[0]}`;
+        } else {
+            return parts[1].substring(0, 5);
+        }
     }
-    return str;
+    
+    // กรณีข้อมูลมาเป็นวันที่แบบ 2026-03-12 หรือเวลา 08:00:00
+    if (type === 'date' && str.includes('-')) {
+        let d = str.split('-');
+        return `${d[2]}/${d[1]}/${d[0]}`;
+    }
+    
+    return str.substring(0, 5);
 }
 
 async function loadData() {
@@ -119,19 +132,23 @@ async function loadData() {
 function lockCarDropdown() {
     const d = document.getElementById('date').value;
     Array.from(carSel.options).forEach(opt => {
-        opt.disabled = bookings.some(b => b.date && b.date.includes(d) && b.car === opt.value && b.status !== "ไม่อนุมัติ");
+        const isBusy = bookings.some(b => b.date && b.date.includes(d) && b.car === opt.value && b.status !== "ไม่อนุมัติ");
+        opt.disabled = isBusy;
     });
 }
 
 async function saveBooking() {
     const d = document.getElementById('date').value;
     if(!d || d < todayStr) return alert("ห้ามเลือกวันย้อนหลัง!");
+    
     const dr = driverSel.value;
-    if((p1Sel.value !== "" && p1Sel.value === dr) || (p2Sel.value !== "" && p2Sel.value === dr)) return alert("ชื่อผู้ร่วมเดินทางซ้ำกับคนขับ!");
-    if(p1Sel.value !== "" && p2Sel.value !== "" && p1Sel.value === p2Sel.value) return alert("ชื่อผู้ร่วมเดินทางซ้ำกันเอง!");
+    const p1 = p1Sel.value;
+    const p2 = p2Sel.value;
+    if((p1 !== "" && p1 === dr) || (p2 !== "" && p2 === dr)) return alert("ชื่อผู้ร่วมเดินทางซ้ำกับผู้ขับ!");
+    if(p1 !== "" && p2 !== "" && p1 === p2) return alert("ชื่อผู้ร่วมเดินทางซ้ำกันเอง!");
 
     document.getElementById('loading').style.display="inline";
-    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(dr)}&p1=${encodeURIComponent(p1Sel.value)}&p2=${encodeURIComponent(p2Sel.value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
+    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(dr)}&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
     await fetch(url);
     document.getElementById('loading').style.display="none";
     loadData();
@@ -146,24 +163,40 @@ async function updateStatus(id, status) {
     loadData();
 }
 
-function renderAll() { filtered = bookings; renderTable(); renderDashboard(); renderSummary(); lockCarDropdown(); }
+function renderAll() {
+    filtered = bookings;
+    renderTable();
+    renderDashboard();
+    renderSummary();
+    lockCarDropdown();
+}
 
 function renderTable() {
     let start=(page-1)*perPage;
     let data=filtered.slice(start, start+perPage);
     let html="";
     data.forEach(b => {
-        let p1 = (b.p1 && b.p1 !== "") ? b.p1 : "";
-        let p2 = (b.p2 && b.p2 !== "") ? b.p2 : "";
+        let sText = b.status || "รออนุมัติ";
+        let sClass = sText === "อนุมัติ" ? "status-ok" : (sText === "ไม่อนุมัติ" ? "status-no" : "status-wait");
+        
+        let p1 = (b.p1 && b.p1 !== "" && b.p1 !== "-- ไม่มีผู้ร่วมเดินทาง --") ? b.p1 : "";
+        let p2 = (b.p2 && b.p2 !== "" && b.p2 !== "-- ไม่มีผู้ร่วมเดินทาง --") ? b.p2 : "";
         let pDisplay = (p1 || p2) ? (p1 + (p1 && p2 ? ", " : "") + p2) : "ไม่มีผู้ร่วมเดินทาง";
         
-        let actionCell = b.approvedBy ? `<span style="color:#0a8a2a; font-weight:bold;">✅ ${b.approvedBy}</span>` : "-";
-        if (admin && (b.status === "รออนุมัติ" || b.status === "รอ" || !b.status)) {
-            actionCell = `<button class="green" onclick="updateStatus('${b.id}','อนุมัติ')">อนุมัติ</button> <button class="red" onclick="updateStatus('${b.id}','ไม่อนุมัติ')">ปฏิเสธ</button>`;
+        let actionCell = "";
+        if (admin && (sText === "รออนุมัติ" || sText === "รอ")) {
+            actionCell = `<button class="green" onclick="updateStatus('${b.id}','อนุมัติ')">อนุมัติ</button> 
+                          <button class="red" onclick="updateStatus('${b.id}','ไม่อนุมัติ')">ปฏิเสธ</button>`;
+        } else {
+            actionCell = b.approvedBy ? `<span style="color:#0a8a2a; font-weight:bold;">✅ ${b.approvedBy}</span>` : "-";
         }
-        
-        // ใช้ cleanDate และ cleanTime ตรงนี้
-        html += `<tr><td>${cleanDate(b.date)}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td><td>${pDisplay}</td><td>${cleanTime(b.start)} - ${cleanTime(b.end)}</td><td class="${b.status==='อนุมัติ'?'status-ok':(b.status==='ไม่อนุมัติ'?'status-no':'status-wait')}">${b.status||'รอ'}</td><td>${actionCell}</td></tr>`;
+
+        html += `<tr>
+            <td>${parseDateTime(b.date, 'date')}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
+            <td>${pDisplay}</td>
+            <td>${parseDateTime(b.start, 'time')} - ${parseDateTime(b.end, 'time')}</td>
+            <td class="${sClass}">${sText}</td><td>${actionCell}</td>
+        </tr>`;
     });
     document.getElementById('tb').innerHTML = html;
     renderPagination();
@@ -177,7 +210,7 @@ function renderDashboard() {
 
 function renderSummary() {
     const d = document.getElementById('date').value;
-    const count = (s) => bookings.filter(b => b.date && b.date.includes(d) && (b.status === s || (s === "รอ" && (!b.status || b.status==="รออนุมัติ")))).length;
+    const count = (s) => bookings.filter(b => b.date && b.date.includes(d) && (b.status === s || (s === "รอ" && (!b.status || b.status === "รออนุมัติ")))).length;
     document.getElementById('summary').innerHTML = `สรุปวันนี้: อนุมัติ ${count("อนุมัติ")} | รอ ${count("รอ")} | ปฏิเสธ ${count("ไม่อนุมัติ")}`;
 }
 
@@ -185,26 +218,37 @@ function loginAdmin() {
     let p = prompt("รหัส Admin:");
     if(p === "11223344" || p === "12121212") {
         admin = true; adminName = (p === "11223344") ? "จิรศักดิ์" : "จุติมา";
-        document.getElementById('loginBtn').style.display="none"; document.getElementById('logoutBtn').style.display="inline-block"; document.getElementById('exportBtn').style.display="inline-block";
+        document.getElementById('loginBtn').style.display="none";
+        document.getElementById('logoutBtn').style.display="inline-block";
+        document.getElementById('exportBtn').style.display="inline-block";
         renderTable();
     }
 }
+
 function logoutAdmin() { admin=false; location.reload(); }
+
 function applyFilter() {
-    const fc = document.getElementById('filterCar').value; const fd = document.getElementById('filterDriver').value; const fdt = document.getElementById('filterDate').value;
+    const fc = document.getElementById('filterCar').value;
+    const fd = document.getElementById('filterDriver').value;
+    const fdt = document.getElementById('filterDate').value;
     filtered = bookings.filter(b => (!fc || b.car === fc) && (!fd || b.driver === fd) && (!fdt || (b.date && b.date.includes(fdt))));
     page = 1; renderTable();
 }
+
 function renderPagination() {
     let total = Math.ceil(filtered.length / perPage);
-    document.getElementById('page').innerHTML = total > 1 ? `<button onclick="goPage(${page-1})">ก่อนหน้า</button> หน้า ${page} / ${total} <button onclick="goPage(${page+1})">ถัดไป</button>` : "";
+    let html = `<button onclick="goPage(${page-1})">ก่อนหน้า</button> หน้า ${page} / ${total} <button onclick="goPage(${page+1})">ถัดไป</button>`;
+    document.getElementById('page').innerHTML = total > 1 ? html : "";
 }
+
 function goPage(p) { if(p > 0 && p <= Math.ceil(filtered.length/perPage)) { page = p; renderTable(); } }
+
 function exportCSV() {
     let csv = "\uFEFFวันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วมเดินทาง,เริ่ม,จบ,สถานะ,ผู้อนุมัติ\n";
-    bookings.forEach(b => csv += `${cleanDate(b.date)},${b.car},${b.project},${b.driver},${b.p1} ${b.p2},${cleanTime(b.start)},${cleanTime(b.end)},${b.status},${b.approvedBy}\n`);
-    const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = "data.csv"; link.click();
+    bookings.forEach(b => csv += `${parseDateTime(b.date, 'date')},${b.car},${b.project},${b.driver},"${b.p1} ${b.p2}",${parseDateTime(b.start, 'time')},${parseDateTime(b.end, 'time')},${b.status},${b.approvedBy}\n`);
+    const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = "จองรถ_GutsIOC.csv"; link.click();
 }
+
 window.onload = loadData;
 </script>
 </body>
