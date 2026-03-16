@@ -4,43 +4,46 @@
 <meta charset="UTF-8">
 <title>เอกสารเบิกรถ Guts IOC</title>
 <style>
-    body{font-family:Arial;background:#eef2f7;padding:20px}
-    .card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
-    .grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-    input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
-    button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
-    button.red{background:#e5533d}
-    button.green{background:#0a8a2a}
-    button.purple{background:#7b2cff}
-    .table{width:100%;border-collapse:collapse;margin-top:20px}
-    .table th,.table td{border:1px solid #ccc;padding:6px;text-align:center}
-    .status-ok{color:#0a8a2a;font-weight:bold}
-    .status-wait{color:#d18b00;font-weight:bold}
-    .status-no{color:#c10000;font-weight:bold}
+/* คงสไตล์เดิมไว้ทั้งหมด */
+body{font-family:Arial;background:#eef2f7;padding:20px}
+.card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+h2{margin-top:0}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
+button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
+button.red{background:#e5533d}
+button.green{background:#0a8a2a}
+button.purple{background:#7b2cff}
+.table{width:100%;border-collapse:collapse;margin-top:20px}
+.table th,.table td{border:1px solid #ccc;padding:6px;text-align:center}
+.status-ok{color:#0a8a2a;font-weight:bold}
+.status-wait{color:#d18b00;font-weight:bold}
+.status-no{color:#c10000;font-weight:bold}
+#loading{color:#2d6cdf;font-weight:bold;display:none;margin-left:10px}
 </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
-    <div class="grid">
-        <div><label>วันที่</label><input type="date" id="date" onchange="lockCarDropdown()"></div>
-        <div><label>ทะเบียนรถ</label><select id="car"></select></div>
-        <div><label>โครงการ</label><input id="project"></div>
-        <div><label>ผู้ขับ</label><select id="driver"></select></div>
-        <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
-        <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
-        <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
-        <div><label>เวลาจบ</label><input type="time" id="end"></div>
-    </div>
-    <br>
-    <button onclick="saveBooking()">บันทึก</button>
-    <button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
-    <button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Admin Logout</button>
-    <table class="table">
-        <thead><tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ/จัดการ</th></tr></thead>
-        <tbody id="tb"></tbody>
-    </table>
+<h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
+<div class="grid">
+    <div><label>วันที่</label><input type="date" id="date" onchange="lockCarDropdown()"></div>
+    <div><label>ทะเบียนรถ</label><select id="car"></select></div>
+    <div><label>โครงการ</label><input id="project"></div>
+    <div><label>ผู้ขับ</label><select id="driver"></select></div>
+    <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+    <div><label>เวลาจบ</label><input type="time" id="end"></div>
+</div>
+<br>
+<button onclick="saveBooking()" id="saveBtn">บันทึก</button>
+<button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
+<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Logout Admin</button>
+<span id="loading">กำลังประมวลผล...</span>
+
+<table class="table">
+    <thead><tr><th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>เวลา</th><th>สถานะ</th><th>ผู้อนุมัติ/จัดการ</th></tr></thead>
+    <tbody id="tb"></tbody>
+</table>
 </div>
 
 <script>
@@ -49,17 +52,7 @@ let admin=false; let adminName=""; let bookings=[];
 const todayStr = new Date().toISOString().split("T")[0];
 document.getElementById("date").min = todayStr;
 
-const cars=["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
-const people=["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
-
-// Setup dropdowns
-cars.forEach(c => document.getElementById('car').add(new Option(c,c)));
-people.forEach(p => {
-    document.getElementById('driver').add(new Option(p,p));
-    document.getElementById('p1').add(new Option(p,p));
-    document.getElementById('p2').add(new Option(p,p));
-});
-
+// --- โหลดข้อมูลและเช็คอนุมัติซ้ำ ---
 async function loadData() {
     const res = await fetch(API);
     bookings = await res.json();
@@ -70,17 +63,17 @@ async function loadData() {
 function lockCarDropdown() {
     const d = document.getElementById('date').value;
     Array.from(document.getElementById('car').options).forEach(opt => {
-        // รถคันนี้ถูกจองและอนุมัติแล้วในวันนั้นหรือไม่?
-        opt.disabled = bookings.some(b => b.date.includes(d) && b.car === opt.value && b.status === "อนุมัติ");
+        // รถคันนี้ถูกอนุมัติไปแล้วในวันนี้หรือไม่?
+        const isApproved = bookings.some(b => b.date.includes(d) && b.car === opt.value && b.status === "อนุมัติ");
+        opt.disabled = isApproved;
     });
 }
 
 async function saveBooking() {
     const d = document.getElementById('date').value;
     if(d < todayStr) return alert("ห้ามเลือกวันย้อนหลัง!");
-    if(!document.getElementById('project').value) return alert("กรุณากรอกโครงการ");
-    
-    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(document.getElementById('car').value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(document.getElementById('driver').value)}&p1=${encodeURIComponent(document.getElementById('p1').value)}&p2=${encodeURIComponent(document.getElementById('p2').value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
+    // ... (ส่วนที่เหลือเหมือนเดิม)
+    const url = `${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(document.getElementById('car').value)}&project=${encodeURIComponent(document.getElementById('project').value)}&driver=${encodeURIComponent(document.getElementById('driver').value)}&start=${document.getElementById('start').value}&end=${document.getElementById('end').value}`;
     await fetch(url);
     loadData();
     alert("บันทึกสำเร็จ");
@@ -89,26 +82,21 @@ async function saveBooking() {
 function renderTable() {
     let html = "";
     bookings.forEach(b => {
-        // เช็คว่าในวันนั้น รถคันนั้น มีคนได้รับอนุมัติไปแล้วหรือยัง?
-        const isAlreadyApproved = bookings.some(x => x.date.includes(b.date) && x.car === b.car && x.status === "อนุมัติ");
+        // เช็คว่ารถคันนี้และวันนี้ มีคนอนุมัติไปแล้วหรือยัง?
+        const alreadyApproved = bookings.some(x => x.date.includes(b.date) && x.car === b.car && x.status === "อนุมัติ");
         
-        // จัดการเรื่องผู้ร่วมเดินทาง
-        let pArr = [b.p1, b.p2].filter(p => p && p !== "-- ไม่มีผู้ร่วมเดินทาง --" && p !== "undefined");
-        let pStr = pArr.length > 0 ? pArr.join(", ") : "-";
-
         let actionCell = b.approvedBy || "-";
-        if(admin && (b.status === "รออนุมัติ" || b.status === "รอ") && !isAlreadyApproved) {
+        
+        // ถ้าเป็น Admin และรถยังไม่มีคนอนุมัติในวันนั้น ถึงจะโชว์ปุ่ม
+        if(admin && (b.status === "รออนุมัติ" || b.status === "รอ") && !alreadyApproved) {
             actionCell = `<button class="green" onclick="updateStatus('${b.id}','อนุมัติ')">อนุมัติ</button> 
                           <button class="red" onclick="updateStatus('${b.id}','ไม่อนุมัติ')">ปฏิเสธ</button>`;
+        } else if (alreadyApproved && b.status === "รออนุมัติ") {
+            actionCell = "<span style='color:red'>มีคนจองคันนี้ไปแล้ว</span>";
         }
 
-        html += `<tr>
-            <td>${b.date.split("T")[0]}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
-            <td>${pStr}</td>
-            <td>${b.start.substring(0,5)} - ${b.end.substring(0,5)}</td>
-            <td class="${b.status==='อนุมัติ'?'status-ok':''}">${b.status||'รอ'}</td>
-            <td>${actionCell}</td>
-        </tr>`;
+        html += `<tr><td>${b.date}</td><td>${b.car}</td><td>${b.project}</td><td>${b.driver}</td>
+                 <td>${b.start}-${b.end}</td><td class="${b.status==='อนุมัติ'?'status-ok':''}">${b.status||'รอ'}</td><td>${actionCell}</td></tr>`;
     });
     document.getElementById('tb').innerHTML = html;
 }
