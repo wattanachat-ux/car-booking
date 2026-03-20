@@ -101,10 +101,21 @@ document.getElementById('filterDriver').add(new Option("ทั้งหมด","
 // --- ฟังก์ชันดึงเฉพาะเวลาแบบใหม่ที่แม่นยำกว่าเดิม ---
 function getOnlyTime(val) {
     if (!val) return "--:--";
+    
+    // ถ้าเป็น ISO String หรือมี T ให้แยกเอาเฉพาะส่วนเวลา
     let str = val.toString();
-    // ค้นหาตำแหน่งของตัวเลขที่เป็นรูปแบบ 00:00 โดยใช้ Regular Expression
-    let match = str.match(/(\d{2}:\d{2})/);
-    return match ? match[1] : "--:--";
+    if (str.includes('T')) {
+        str = str.split('T')[1];
+    }
+
+    // ใช้ Regex จับเวลาในรูปแบบ H:mm หรือ HH:mm:ss
+    let match = str.match(/(\d{1,2}):(\d{2})/);
+    if (match) {
+        let h = match[1].padStart(2, '0'); // เติม 0 ข้างหน้าถ้ามีหลักเดียว เช่น 8 -> 08
+        let m = match[2];
+        return `${h}:${m}`;
+    }
+    return "--:--";
 }
 
 // --- ฟังก์ชันดึงวันที่แบบใหม่ ---
