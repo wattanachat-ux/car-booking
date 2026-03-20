@@ -100,40 +100,51 @@ document.getElementById('filterDriver').add(new Option("ทั้งหมด","
 
 // --- ฟังก์ชันดึงเฉพาะเวลาแบบใหม่ที่แม่นยำกว่าเดิม ---
 function getOnlyTime(val) {
-    if (!val) return "--:--";
-    
-    let str = val.toString();
+  if (!val || val === "") return "--:--";
+  let str = String(val).trim();
 
-    // 1. กรณีมาเป็น ISO String (เช่น 2026-03-21T08:00:00.000Z)
-    if (str.includes('T')) {
-        let timePart = str.split('T')[1]; // เอาหลัง T
-        let parts = timePart.split(':');
-        return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
-    }
+  // กรณี Apps Script แปลงแล้วส่งมาเป็น "HH:mm" ตรงๆ (หลังแก้)
+  if (/^\d{1,2}:\d{2}$/.test(str)) {
+    return str.padStart(5, '0'); // "8:00" → "08:00"
+  }
 
-    // 2. กรณีมาเป็นรูปแบบเวลาปกติหรือมีวินาที (เช่น 8:00:00 หรือ 08:00)
-    // ใช้ Regex ที่ยืดหยุ่นขึ้น (จับตัวเลข 1 หรือ 2 หลักก็ได้)
-    let match = str.match(/(\d{1,2}):(\d{2})/);
-    if (match) {
-        let h = match[1].padStart(2, '0'); // เติม 0 หน้าชั่วโมงถ้ามีหลักเดียว
-        let m = match[2];
-        return `${h}:${m}`;
-    }
+  // กรณี ISO string (fallback เผื่อข้อมูลเก่าใน sheet)
+  // ใช้ getUTCHours เพราะ Google Sheet เก็บ time เป็น UTC 1899-12-30
+  if (str.includes('T')) {
+    try {
+      const d = new Date(str);
+      const h = String(d.getUTCHours()).padStart(2, '0');
+      const m = String(d.getUTCMinutes()).padStart(2, '0');
+      return `${h}:${m}`;
+    } catch(e) {}
+  }
 
-    return "--:--";
+  // Regex fallback
+  const match = str.match(/(\d{1,2}):(\d{2})/);
+  if (match) return match[1].padStart(2, '0') + ':' + match[2];
+
+  return "--:--";
 }
 
-// --- ฟังก์ชันดึงวันที่แบบใหม่ ---
+// ── แปลงวันที่ ────────────────────────────────────────────────────
 function getOnlyDate(val) {
-    if (!val) return "-";
-    let str = val.toString();
-    // ถ้ามีตัว T (ISO) ให้เอาเฉพาะส่วนหน้า
-    let datePart = str.split('T')[0];
-    if (datePart.includes('-')) {
-        let d = datePart.split('-');
-        if(d[0].length === 4) return `${d[2]}/${d[1]}/${d[0]}`; // YYYY-MM-DD -> DD/MM/YYYY
-    }
-    return datePart;
+  if (!val || val === "") return "-";
+  let str = String(val).trim();
+
+  // หลังแก้ Apps Script จะส่งมาเป็น "YYYY-MM-DD" ตรงๆ
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    const [y, m, d] = str.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  // ISO fallback
+  if (str.includes('T')) str = str.split('T')[0];
+  if (str.includes('-')) {
+    const d = str.split('-');
+    if (d[0].length === 4) return `${d[2]}/${d[1]}/${d[0]}`;
+  }
+
+  return str;
 }
 
 async function loadData() {
