@@ -245,40 +245,12 @@ function exportCSV(){
 
 // ✅ FIX เวลาแบบไม่พังของเดิม (รองรับ format จาก Google Sheet)
 function formatTime(t){
-
  if(!t) return "--:--";
 
- // ถ้า Google Sheet ส่งมาเป็น Date object
- if(typeof t === "object"){
-   let h = t.getHours().toString().padStart(2,'0');
-   let m = t.getMinutes().toString().padStart(2,'0');
-   return h + ":" + m;
+ // กรณีได้เป็น Date Object
+ if(t instanceof Date){
+   return t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',hour12:false});
  }
-
- let str = t.toString().trim();
-
- // format ปกติ 7:30:00
- let m1 = str.match(/^(\d{1,2}):(\d{2})/);
- if(m1){
-   return m1[1].padStart(2,'0') + ":" + m1[2];
- }
-
- // format ISO 1899-12-30T07:30:00
- let m2 = str.match(/T(\d{2}):(\d{2})/);
- if(m2){
-   return m2[1] + ":" + m2[2];
- }
-
- // fallback parse
- let d = new Date(str);
- if(!isNaN(d)){
-   let h = d.getHours().toString().padStart(2,'0');
-   let m = d.getMinutes().toString().padStart(2,'0');
-   return h + ":" + m;
- }
-
- return "--:--";
-}
 
  let str=t.toString();
 
