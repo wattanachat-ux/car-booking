@@ -166,7 +166,7 @@ function render(){
   if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
   if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
 
-  let action=b.approvedBy ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approvedBy}</span>` : "-";
+  let action = (b.approved || b.approvedBy) ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approved || b.approvedBy}</span>` : "-";
 
   if(admin){
     if(b.status==="รออนุมัติ"){
@@ -193,8 +193,8 @@ function render(){
    <td>${b.driver}</td>
    <td>${((b.p1&&b.p1!==""?b.p1:"") + (b.p2&&b.p2!==""? (b.p1?", ":"")+b.p2:"") ) || "ไม่มี"}</td>
    <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
-   <td>${b.keyman||"-"}</td>
-   <td style="${(b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus||"-"}</td>
+   <td>${b.keyman || "-"}</td>
+   <td style="${(b.keystatus && b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus || "-"}</td>
    <td>${badge}</td>
    <td>${action}</td>
   </tr>`;
@@ -323,7 +323,10 @@ function approve(id){ updateStatus(id,"อนุมัติ") }
 function deny(id){ updateStatus(id,"ไม่อนุมัติ") }
 
 async function updateStatus(id,status){
+ // 🔥 keep original approve/deny
  await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
+ await loadData();
+}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
  await loadData();
 }
 
@@ -339,7 +342,11 @@ async function saveBooking(){
  if((p1 && p1===driver) || (p2 && p2===driver)) return alert("ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
  if(p1 && p2 && p1===p2) return alert("ผู้ร่วมเดินทางห้ามซ้ำกัน");
 
- await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}`);
+ // 🔥 add return timestamp when คืน
+ const isReturn = keyStatusSel.value === "คืน";
+ const returnTs = isReturn ? new Date().toISOString() : "";
+
+ await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}&keyman=${keymanSel.value||""}&keystatus=${keyStatusSel.value||""}&return_ts=${returnTs}`);
  await loadData();
  alert("บันทึกสำเร็จ");
 }
