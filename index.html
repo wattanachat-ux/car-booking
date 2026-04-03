@@ -109,24 +109,15 @@ document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
 const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
-// 🔥 normalize วันที่ (ตัวแก้ bug หลัก)
-// 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
-function getDateKey(val){
- if(!val) return "";
- try{
-  const d = new Date(val);
-  return d.toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}); // yyyy-mm-dd
- }catch(e){
-  return "";
- }
-}
-
 async function loadData(){
  try{
   const res = await fetch(API+"?ts="+Date.now());
   const txt = await res.text();
   bookings = JSON.parse(txt);
+
+  // ✅ เรียงล่าสุดขึ้นก่อน (ใช้ id timestamp)
   bookings.sort((a,b)=> Number(b.id) - Number(a.id));
+
  }catch(e){
   alert("โหลดข้อมูลจาก Sheet ไม่ได้");
   bookings=[];
@@ -136,13 +127,24 @@ async function loadData(){
  renderDash();
 }
 
+// ✅ AUTO SYNC ทุก 3 วินาที
 setInterval(loadData,3000);
 
 function renderDash(){
  const d=document.getElementById("date").value;
  let html="รถที่ใช้งาน:";
  cars.forEach(c=>{
-  let busy=bookings.find(b=> getDateKey(b.date)===d && b.car===c && b.status==="อนุมัติ");
+  let busy=bookings.find(b=>b.date && b.date.includes(d) && b.car===c && b.status==="อนุมัติ");
+  if(busy) html+=` 🔴 ${c}`;
+ });
+ document.getElementById("dash").innerHTML=html;
+}
+
+function renderDash(){
+ const d=document.getElementById("date").value;
+ let html="รถที่ใช้งาน:";
+ cars.forEach(c=>{
+  let busy=bookings.find(b=>b.date && b.date.includes(d) && b.car===c && b.status==="อนุมัติ");
   if(busy) html+=` 🔴 ${c}`;
  });
  document.getElementById("dash").innerHTML=html;
@@ -164,7 +166,7 @@ function render(){
   if(admin){
     if(b.status==="รออนุมัติ"){
 
-      let alreadyApproved = bookings.find(x=>getDateKey(x.date)===getDateKey(b.date) && x.car===b.car && x.status==="อนุมัติ");
+      let alreadyApproved = bookings.find(x=>x.date===b.date && x.car===b.car && x.status==="อนุมัติ");
 
       if(alreadyApproved){
         action="❌ มีคันนี้อนุมัติแล้ว";
@@ -220,8 +222,7 @@ function filterData(){
  const fdt=document.getElementById("fdate").value;
 
  viewData=bookings.filter(b=>{
-  const dKey = getDateKey(b.date);
-  return (!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt|| dKey===fdt);
+  return (!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt|| (b.date && b.date.includes(fdt)));
  });
  page=1;
  render();
@@ -259,30 +260,41 @@ function exportCSV(){
  a.click();
 }
 
+// ✅ FIX เวลาแบบไม่พังของเดิม (รองรับ format จาก Google Sheet)
 function formatTime(t){
  if(!t) return "--:--";
+
  let str = t.toString();
+
+ // ⭐ FIX จริง: ห้าม new Date() เด็ดขาด เพราะ timezone จะเพี้ยน
+ // format จาก Google Sheet จะเป็น
+ // 1899-12-30T08:00:00.000Z
+ // หรือ 8:00:00
+
  if(str.includes("T")){
    let timePart = str.split("T")[1];
-   return timePart.substring(0,5);
+   if(timePart){
+     return timePart.substring(0,5);
+   }
  }
+
  if(str.includes(":")){
    let sp = str.split(":");
    return sp[0].padStart(2,'0')+":"+sp[1];
  }
+
  return "--:--";
 }
 
 function formatDate(d){
  if(!d) return "-";
- try{
-  const dt = new Date(d);
-  const day = String(dt.toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok'})).split('/');
-  return `${day[0]}/${day[1]}/${day[2]}`;
- }catch(e){
-  return "-";
+ let str=d.toString();
+ if(str.includes("T")){
+   let part=str.split("T")[0];
+   let s=part.split("-");
+   return `${s[2]}/${s[1]}/${s[0]}`;
  }
-}/${s[1]}/${s[0]}`;
+ return d;
 }
 
 async function deleteRow(id){
@@ -308,7 +320,7 @@ async function saveBooking(){
  const d=document.getElementById("date").value;
  if(!d || d<today) return alert("ห้ามเลือกย้อนหลัง");
 
- await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}`);
+ await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${project.value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}`);
  await loadData();
  alert("บันทึกสำเร็จ");
 }
