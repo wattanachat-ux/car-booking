@@ -194,8 +194,24 @@ function render(){
    <td>${b.driver}</td>
    <td>${((b.p1&&b.p1!==""?b.p1:"") + (b.p2&&b.p2!==""? (b.p1?", ":"")+b.p2:"") ) || "ไม่มี"}</td>
    <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
-   <td>${b.keyman || "-"}</td>
-   <td style="${(b.keystatus && b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus || "-"}</td>
+   <td>
+     ${admin ? `
+       <select onchange="setTempKey('${b.id}', this.value, 'keyman')">
+         <option value="">-</option>
+         ${["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"].map(n=>`<option value="${n}" ${b.keyman===n?"selected":""}>${n}</option>`).join("")}
+       </select>
+     ` : (b.keyman || "-")}
+   </td>
+   <td style="${(b.keystatus && b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">
+     ${admin ? `
+       <select onchange="setTempKey('${b.id}', this.value, 'keystatus')">
+         <option value="">-</option>
+         <option value="เบิก" ${b.keystatus==='เบิก'?"selected":""}>เบิก</option>
+         <option value="คืน" ${b.keystatus==='คืน'?"selected":""}>คืน</option>
+       </select>
+       <button class='green' onclick="saveKey('${b.id}')">บันทึก</button>
+     ` : (b.keystatus || "-")}
+   </td>
    <td>${badge}</td>
    <td>${action}</td>
   </tr>`;
@@ -298,8 +314,14 @@ function isOverdue(b){
   if(b.keystatus==="คืน") return false;
   const now=new Date();
   const end=new Date(getDateKey(b.date)+"T"+formatTime(b.end)+":00");
-  return now>end;
+
+  // 🔥 แจ้งเตือน
+  if(now>end){
+    return true;
+  }
+  return false;
  }catch(e){return false}
+}catch(e){return false}
 }
 
 function formatDate(d){
@@ -323,6 +345,32 @@ async function deleteRow(id){
  }catch(e){
   alert("ลบไม่สำเร็จ");
  }
+}
+
+let tempKeyData = {};
+function setTempKey(id,val,type){
+ if(!tempKeyData[id]) tempKeyData[id]={};
+ tempKeyData[id][type]=val;
+}
+
+async function saveKey(id){
+ if(!admin) return;
+ const row = bookings.find(x=>x.id==id) || {};
+ const data = tempKeyData[id] || {};
+
+ // 🔥 merge ค่าเดิมกันข้อมูลหาย
+ const keyman = data.keyman!==undefined ? data.keyman : (row.keyman||"");
+ const keystatus = data.keystatus!==undefined ? data.keystatus : (row.keystatus||"");
+
+ try{
+  await fetch(`${API}?action=updateKey&id=${id}&keyman=${keyman}&keystatus=${keystatus}`);
+  await loadData();
+ }catch(e){ alert("บันทึกกุญแจไม่สำเร็จ"); }
+};
+ try{
+  await fetch(`${API}?action=updateKey&id=${id}&keyman=${data.keyman||""}&keystatus=${data.keystatus||""}`);
+  await loadData();
+ }catch(e){ alert("บันทึกกุญแจไม่สำเร็จ"); }
 }
 
 function approve(id){ updateStatus(id,"อนุมัติ") }
