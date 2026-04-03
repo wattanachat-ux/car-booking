@@ -329,6 +329,11 @@ async function updateStatus(id,status){
  }catch(e){
   alert("อัปเดตสถานะไม่สำเร็จ");
  }
+}&status=${status}&admin=${adminName}`);
+  await loadData();
+ }catch(e){
+  alert("อัปเดตสถานะไม่สำเร็จ");
+ }
 }?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
   await loadData();
  }catch(e){
