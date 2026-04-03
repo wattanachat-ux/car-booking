@@ -40,8 +40,6 @@ button.gray{background:#555}
 <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
 <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
 <div><label>เวลาจบ</label><input type="time" id="end"></div>
-<div id="keymanBox" style="display:none"><label>ผู้จ่ายกุญแจ</label><select id="keyman"></select></div>
-<div id="keystatusBox" style="display:none"><label>สถานะกุญแจ</label><select id="keystatus"><option value="">-</option><option value="เบิก">เบิก</option><option value="คืน">คืน</option></select></div>
 </div>
 
 <br>
@@ -62,7 +60,7 @@ button.gray{background:#555}
 <table class="table">
 <thead>
 <tr>
-<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>ผู้จ่ายกุญแจ</th><th>สถานะกุญแจ</th><th>สถานะ</th><th>อนุมัติ</th>
+<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>อนุมัติ</th>
 </tr>
 </thead>
 <tbody id="tb"></tbody>
@@ -90,8 +88,6 @@ const carSel=document.getElementById("car");
 const driverSel=document.getElementById("driver");
 const p1Sel=document.getElementById("p1");
 const p2Sel=document.getElementById("p2");
-const keymanSel=document.getElementById("keyman");
-const keyStatusSel=document.getElementById("keystatus");
 
 cars.forEach(c=>{
  carSel.add(new Option(c,c));
@@ -108,9 +104,6 @@ document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
 [p1Sel,p2Sel].forEach(s=>{
  s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
  people.forEach(p=>s.add(new Option(p,p)));
-});
-["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"].forEach(n=>{
- keymanSel.add(new Option(n,n));
 });
 
 const today=new Date().toISOString().split("T")[0];
@@ -166,7 +159,7 @@ function render(){
   if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
   if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
 
-  let action = (b.approved || b.approvedBy) ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approved || b.approvedBy}</span>` : "-";
+  let action=b.approvedBy ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approvedBy}</span>` : "-";
 
   if(admin){
     if(b.status==="รออนุมัติ"){
@@ -193,8 +186,6 @@ function render(){
    <td>${b.driver}</td>
    <td>${((b.p1&&b.p1!==""?b.p1:"") + (b.p2&&b.p2!==""? (b.p1?", ":"")+b.p2:"") ) || "ไม่มี"}</td>
    <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
-   <td>${b.keyman || "-"}</td>
-   <td style="${(b.keystatus && b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus || "-"}</td>
    <td>${badge}</td>
    <td>${action}</td>
   </tr>`;
@@ -245,8 +236,6 @@ function loginAdmin(){
   loginBtn.style.display="none";
   logoutBtn.style.display="inline-block";
   exportBtn.style.display="inline-block";
-  document.getElementById("keymanBox").style.display="block";
-  document.getElementById("keystatusBox").style.display="block";
  }
  render();
 }
@@ -256,8 +245,6 @@ function logoutAdmin(){
  loginBtn.style.display="inline-block";
  logoutBtn.style.display="none";
  exportBtn.style.display="none";
- document.getElementById("keymanBox").style.display="none";
- document.getElementById("keystatusBox").style.display="none";
  render();
 }
 
@@ -287,15 +274,6 @@ function formatTime(t){
  return "--:--";
 }
 
-function isOverdue(b){
- try{
-  if(b.keystatus==="คืน") return false;
-  const now=new Date();
-  const end=new Date(getDateKey(b.date)+"T"+formatTime(b.end)+":00");
-  return now>end;
- }catch(e){return false}
-}
-
 function formatDate(d){
  if(!d) return "-";
  try{
@@ -323,25 +301,7 @@ function approve(id){ updateStatus(id,"อนุมัติ") }
 function deny(id){ updateStatus(id,"ไม่อนุมัติ") }
 
 async function updateStatus(id,status){
- try{
-  await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
-  await loadData();
- }catch(e){
-  alert("อัปเดตสถานะไม่สำเร็จ");
- }
-}&status=${status}&admin=${adminName}`);
-  await loadData();
- }catch(e){
-  alert("อัปเดตสถานะไม่สำเร็จ");
- }
-}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
-  await loadData();
- }catch(e){
-  alert("อัปเดตสถานะไม่สำเร็จ");
- }
-}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
- await loadData();
-}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
+ await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
  await loadData();
 }
 
@@ -357,11 +317,7 @@ async function saveBooking(){
  if((p1 && p1===driver) || (p2 && p2===driver)) return alert("ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
  if(p1 && p2 && p1===p2) return alert("ผู้ร่วมเดินทางห้ามซ้ำกัน");
 
- // 🔥 add return timestamp when คืน
- const isReturn = keyStatusSel.value === "คืน";
- const returnTs = isReturn ? new Date().toISOString() : "";
-
- await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}&keyman=${keymanSel.value||""}&keystatus=${keyStatusSel.value||""}&return_ts=${returnTs}`);
+ await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}`);
  await loadData();
  alert("บันทึกสำเร็จ");
 }
