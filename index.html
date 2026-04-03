@@ -110,11 +110,15 @@ const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
 // 🔥 normalize วันที่ (ตัวแก้ bug หลัก)
+// 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
 function getDateKey(val){
  if(!val) return "";
- let str = val.toString();
- if(str.includes("T")) return str.split("T")[0];
- return str.substring(0,10);
+ try{
+  const d = new Date(val);
+  return d.toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}); // yyyy-mm-dd
+ }catch(e){
+  return "";
+ }
 }
 
 async function loadData(){
@@ -271,9 +275,14 @@ function formatTime(t){
 
 function formatDate(d){
  if(!d) return "-";
- const key = getDateKey(d);
- const s = key.split("-");
- return `${s[2]}/${s[1]}/${s[0]}`;
+ try{
+  const dt = new Date(d);
+  const day = String(dt.toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok'})).split('/');
+  return `${day[0]}/${day[1]}/${day[2]}`;
+ }catch(e){
+  return "-";
+ }
+}/${s[1]}/${s[0]}`;
 }
 
 async function deleteRow(id){
