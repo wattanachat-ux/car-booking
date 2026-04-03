@@ -323,8 +323,18 @@ function approve(id){ updateStatus(id,"อนุมัติ") }
 function deny(id){ updateStatus(id,"ไม่อนุมัติ") }
 
 async function updateStatus(id,status){
- // 🔥 keep original approve/deny
- await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
+ try{
+  await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
+  await loadData();
+ }catch(e){
+  alert("อัปเดตสถานะไม่สำเร็จ");
+ }
+}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
+  await loadData();
+ }catch(e){
+  alert("อัปเดตสถานะไม่สำเร็จ");
+ }
+}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
  await loadData();
 }?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
  await loadData();
