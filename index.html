@@ -40,6 +40,16 @@ button.gray{background:#555}
 <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
 <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
 <div><label>เวลาจบ</label><input type="time" id="end"></div>
+<div><label>ผู้จ่ายกุญแจ</label><select id="keyman"></select></div>
+<div><label>สถานะกุญแจ</label><select id="keystatus"><option value="">-</option><option value="เบิก">เบิก</option><option value="คืน">คืน</option></select></div>
+</div>
+<div><label>ทะเบียนรถ</label><select id="car"></select></div>
+<div><label>โครงการ</label><input id="project"></div>
+<div><label>ผู้ขับ</label><select id="driver"></select></div>
+<div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
+<div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+<div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+<div><label>เวลาจบ</label><input type="time" id="end"></div>
 </div>
 
 <br>
@@ -60,7 +70,7 @@ button.gray{background:#555}
 <table class="table">
 <thead>
 <tr>
-<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>สถานะ</th><th>อนุมัติ</th>
+<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>ผู้จ่ายกุญแจ</th><th>สถานะกุญแจ</th><th>สถานะ</th><th>อนุมัติ</th>
 </tr>
 </thead>
 <tbody id="tb"></tbody>
@@ -88,6 +98,8 @@ const carSel=document.getElementById("car");
 const driverSel=document.getElementById("driver");
 const p1Sel=document.getElementById("p1");
 const p2Sel=document.getElementById("p2");
+const keymanSel=document.getElementById("keyman");
+const keyStatusSel=document.getElementById("keystatus");
 
 cars.forEach(c=>{
  carSel.add(new Option(c,c));
@@ -104,6 +116,9 @@ document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
 [p1Sel,p2Sel].forEach(s=>{
  s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
  people.forEach(p=>s.add(new Option(p,p)));
+});
+["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"].forEach(n=>{
+ keymanSel.add(new Option(n,n));
 });
 
 const today=new Date().toISOString().split("T")[0];
@@ -186,6 +201,8 @@ function render(){
    <td>${b.driver}</td>
    <td>${((b.p1&&b.p1!==""?b.p1:"") + (b.p2&&b.p2!==""? (b.p1?", ":"")+b.p2:"") ) || "ไม่มี"}</td>
    <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
+   <td>${b.keyman||"-"}</td>
+   <td style="${(b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus||"-"}</td>
    <td>${badge}</td>
    <td>${action}</td>
   </tr>`;
@@ -272,6 +289,15 @@ function formatTime(t){
    return sp[0].padStart(2,'0')+":"+sp[1];
  }
  return "--:--";
+}
+
+function isOverdue(b){
+ try{
+  if(b.keystatus==="คืน") return false;
+  const now=new Date();
+  const end=new Date(getDateKey(b.date)+"T"+formatTime(b.end)+":00");
+  return now>end;
+ }catch(e){return false}
 }
 
 function formatDate(d){
