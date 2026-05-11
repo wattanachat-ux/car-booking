@@ -73,6 +73,7 @@ button.gray{background:#555}
 </div>
 
 <script>
+
 const API="https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
 
 let bookings=[];
@@ -80,136 +81,84 @@ let viewData=[];
 let admin=false;
 let adminName="";
 let page=1;
-const perPage=5;
-let tempKeyData={};
+let perPage=5;
 
 const cars=["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
 const people=["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
-const keymans=["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"];
 
 const carSel=document.getElementById("car");
 const driverSel=document.getElementById("driver");
 const p1Sel=document.getElementById("p1");
 const p2Sel=document.getElementById("p2");
-
-const filterCar=document.getElementById("fcar") || document.getElementById("filterCar");
+const keymanSel=document.getElementById("keyman");
+const keyStatusSel=document.getElementById("keystatus");
 
 cars.forEach(c=>{
  carSel.add(new Option(c,c));
- if(filterCar) filterCar.add(new Option(c,c));
+ document.getElementById("fcar").add(new Option(c,c));
 });
-if(filterCar) filterCar.add(new Option("ทั้งหมด",""),0);
-
-const filterDriver=document.getElementById("fdriver") || document.getElementById("filterDriver");
+document.getElementById("fcar").add(new Option("ทั้งหมด",""));
 
 people.forEach(p=>{
  driverSel.add(new Option(p,p));
- if(filterDriver) filterDriver.add(new Option(p,p));
+ document.getElementById("fdriver").add(new Option(p,p));
 });
-if(filterDriver) filterDriver.add(new Option("ทั้งหมด",""),0);
+document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
 
-[p1Sel,p2Sel].forEach(sel=>{
- sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
- people.forEach(p=>sel.add(new Option(p,p)));
+[p1Sel,p2Sel].forEach(s=>{
+ s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
+ people.forEach(p=>s.add(new Option(p,p)));
+});
+["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"].forEach(n=>{
+ keymanSel.add(new Option(n,n));
 });
 
 const today=new Date().toISOString().split("T")[0];
 document.getElementById("date").min=today;
 
-function getDateKey(v){
- if(!v) return "";
-
+// 🔥 normalize วันที่ (ตัวแก้ bug หลัก)
+// 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
+function getDateKey(val){
+ if(!val) return "";
  try{
-
-  if(typeof v === "string"){
-
-   if(v.includes("T")){
-    return v.split("T")[0];
-   }
-
-   if(v.length >= 10 && v.includes("-")){
-    return v.substring(0,10);
-   }
-  }
-
-  const d = new Date(v);
-
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-
-  return `${y}-${m}-${day}`;
-
+  const d = new Date(val);
+  return d.toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}); // yyyy-mm-dd
  }catch(e){
   return "";
  }
 }
 
-function formatDate(v){
- if(!v) return "-";
- try{
-  const d=new Date(v);
-  return d.toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok'});
- }catch{return "-"}
-}
-
-function formatTime(v){
- if(!v) return "--:--";
- const str=v.toString();
- if(str.includes("T")) return str.split("T")[1].substring(0,5);
- if(str.includes(":")){
-  const s=str.split(":");
-  return s[0].padStart(2,'0')+":"+s[1];
- }
- return "--:--";
-}
-
 async function loadData(){
  try{
-  const res=await fetch(API+"?ts="+Date.now());
-  bookings=await res.json();
-  bookings.sort((a,b)=>Number(b.id)-Number(a.id));
-  viewData=[...bookings];
-  render();
-  renderDash();
+  const res = await fetch(API+"?ts="+Date.now());
+  const txt = await res.text();
+  bookings = JSON.parse(txt);
+  bookings.sort((a,b)=> Number(b.id) - Number(a.id));
  }catch(e){
-  console.log(e);
+  alert("โหลดข้อมูลจาก Sheet ไม่ได้");
+  bookings=[];
  }
+ viewData=[...bookings];
+ if(page>Math.ceil(viewData.length/perPage)) page=1;
+ render();
+ renderDash();
 }
+
+setInterval(loadData,3000);
 
 function renderDash(){
  const d=document.getElementById("date").value;
-
- if(!d){
-  document.getElementById("dash").innerHTML="";
-  return;
- }
-
- const busyCars=[];
-
+ let html="รถที่ใช้งาน:";
  cars.forEach(c=>{
-
-  const busy=bookings.find(b=>
-   getDateKey(b.date)===d &&
-   b.car===c &&
-   b.status==="อนุมัติ"
-  );
-
-  if(busy){
-   busyCars.push(c);
-  }
-
+  let busy=bookings.find(b=> getDateKey(b.date)===d && b.car===c && b.status==="อนุมัติ");
+  if(busy) html+=` 🔴 ${c}`;
  });
-
- document.getElementById("dash").innerHTML = busyCars.length
- ? `รถที่ใช้งานอยู่: 🔴 ${busyCars.join(" 🔴 ")}`
- : "✅ รถว่างทุกคัน";
+ document.getElementById("dash").innerHTML=html;
 }
 
-
 function render(){
- const start=(page-1)*perPage;
- const data=viewData.slice(start,start+perPage);
+ let startIndex=(page-1)*perPage;
+ let data=viewData.slice(startIndex,startIndex+perPage);
  let html="";
 
  data.forEach(b=>{
@@ -218,61 +167,37 @@ function render(){
   if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
   if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
 
-  let approveCol=(b.approved||b.approvedBy)||"-";
+  let action = (b.approved || b.approvedBy) ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approved || b.approvedBy}</span>` : "-";
 
-  if(admin && b.status==="รออนุมัติ"){
-   const duplicated=bookings.find(x=>
-    x.id!==b.id &&
-    getDateKey(x.date)===getDateKey(b.date) &&
-    x.car===b.car &&
-    x.status==="อนุมัติ"
-   );
+  if(admin){
+    if(b.status==="รออนุมัติ"){
 
-   if(duplicated){
-    approveCol="❌ รถซ้ำ";
-   }else{
-    approveCol=`
-    <button class='green' onclick='approve("${b.id}")'>อนุมัติ</button>
-    <button class='red' onclick='deny("${b.id}")'>ไม่อนุมัติ</button>
-    <button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
-   }
+      let alreadyApproved = bookings.find(x=>getDateKey(x.date)===getDateKey(b.date) && x.car===b.car && x.status==="อนุมัติ");
+
+      if(alreadyApproved){
+        action="❌ มีคันนี้อนุมัติแล้ว";
+      }else{
+        action=`<button class='green' onclick='approve("${b.id}")'>อนุมัติ</button>
+                <button class='red' onclick='deny("${b.id}")'>ไม่อนุมัติ</button>
+                <button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
+      }
+
+    }else{
+      action=`<button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
+    }
   }
-
-  if(admin && b.status!=="รออนุมัติ"){
-   approveCol=`${b.approved||b.approvedBy||"-"}<br><button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
-  }
-
-  const passengers=((b.p1||"") + ((b.p1&&b.p2)?", ":"") + (b.p2||"")) || "ไม่มี";
 
   html+=`<tr>
-  <td>${formatDate(b.date)}</td>
-  <td>${b.car||"-"}</td>
-  <td>${b.project||"-"}</td>
-  <td>${b.driver||"-"}</td>
-  <td>${passengers}</td>
-  <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
-
-  <td>
-   ${admin ? `
-   <select onchange="setTempKey('${b.id}',this.value,'keyman')">
-    <option value=''>-</option>
-    ${keymans.map(k=>`<option value='${k}' ${b.keyman===k?"selected":""}>${k}</option>`).join("")}
-   </select>` : (b.keyman||"-")}
-  </td>
-
-  <td style='${isOverdue(b)?"background:#ffcccc":""}'>
-   ${admin ? `
-   <select onchange="setTempKey('${b.id}',this.value,'keystatus')">
-    <option value=''>-</option>
-    <option value='เบิก' ${b.keystatus==='เบิก'?"selected":""}>เบิก</option>
-    <option value='คืน' ${b.keystatus==='คืน'?"selected":""}>คืน</option>
-   </select>
-   <button class='green' onclick="saveKey('${b.id}')">บันทึก</button>
-   ` : (b.keystatus||"-")}
-  </td>
-
-  <td>${badge}</td>
-  <td>${approveCol}</td>
+   <td>${formatDate(b.date)}</td>
+   <td>${b.car}</td>
+   <td>${b.project}</td>
+   <td>${b.driver}</td>
+   <td>${((b.p1&&b.p1!==""?b.p1:"") + (b.p2&&b.p2!==""? (b.p1?", ":"")+b.p2:"") ) || "ไม่มี"}</td>
+   <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
+   <td>${b.keyman || "-"}</td>
+   <td style="${(b.keystatus && b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus || "-"}</td>
+   <td>${badge}</td>
+   <td>${action}</td>
   </tr>`;
  });
 
@@ -281,151 +206,91 @@ function render(){
 }
 
 function renderPagination(){
- const total=Math.ceil(viewData.length/perPage);
- if(total<=1){
-  page.innerHTML="";
-  return;
- }
+ let total=Math.ceil(viewData.length/perPage);
+ if(total<=1){document.getElementById("page").innerHTML="";return}
 
- let html=`<button onclick='prevPage()'><</button>`;
- const start=Math.max(1,page-2);
- const end=Math.min(total,page+2);
+ let html="";
+ html+=`<button onclick='prevPage()'><</button>`;
 
- for(let i=start;i<=end;i++){
-  html+=`<button onclick='goPage(${i})' ${i===page?"style='background:#0a8a2a'":""}>${i}</button>`;
+ for(let i=1;i<=total;i++){
+  html+=`<button onclick='goPage(${i})' ${i===page?"style=\"background:#0a8a2a\"":""}>${i}</button>`;
  }
 
  html+=`<button onclick='nextPage()'>>></button>`;
+
  document.getElementById("page").innerHTML=html;
 }
 
-function prevPage(){page--; if(page<1) page=1; render();}
-function nextPage(){const total=Math.ceil(viewData.length/perPage); page++; if(page>total) page=total; render();}
-function goPage(p){page=p; render();}
+function prevPage(){page--; if(page<1)page=1; render()}
+function nextPage(){
+ let total=Math.ceil(viewData.length/perPage);
+ page++;
+ if(page>total) page=total;
+ render();
+}
+function goPage(p){page=p; render()}
 
 function filterData(){
- const fc=(document.getElementById("fcar") || document.getElementById("filterCar"))?.value || "";
- const fd=(document.getElementById("fdriver") || document.getElementById("filterDriver"))?.value || "";
- const fdt=(document.getElementById("fdate") || document.getElementById("filterDate"))?.value || "";
+ const fc=document.getElementById("fcar").value;
+ const fd=document.getElementById("fdriver").value;
+ const fdt=document.getElementById("fdate").value;
 
- viewData=bookings.filter(b=>
- (!fc||b.car===fc) &&
- (!fd||b.driver===fd) &&
- (!fdt||getDateKey(b.date)===fdt)
- );
-
+ viewData=bookings.filter(b=>{
+  const dKey = getDateKey(b.date);
+  return (!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt|| dKey===fdt);
+ });
  page=1;
  render();
 }
 
-function updatePeopleDropdown(){
- const d=driverSel.value;
- const p1=p1Sel.value;
- const p2=p2Sel.value;
-
- [driverSel,p1Sel,p2Sel].forEach(sel=>{
-  Array.from(sel.options).forEach(opt=>opt.disabled=false);
- });
-
- [driverSel,p1Sel,p2Sel].forEach(sel=>{
-  Array.from(sel.options).forEach(opt=>{
-   if(opt.value && (
-    (opt.value===d && sel!==driverSel) ||
-    (opt.value===p1 && sel!==p1Sel) ||
-    (opt.value===p2 && sel!==p2Sel)
-   )){
-    opt.disabled=true;
-   }
-  });
- });
-}
-
-[driverSel,p1Sel,p2Sel].forEach(sel=>sel.addEventListener("change",updatePeopleDropdown));
-
 function loginAdmin(){
- const p=prompt("รหัส Admin");
- if(p==="11223344") adminName="จิรศักดิ์";
- if(p==="12121212") adminName="จุติมา";
-
- if(adminName){
-  admin=true;
+ let p=prompt("รหัส");
+ if(p==="11223344"){admin=true;adminName="จิรศักดิ์"}
+ if(p==="12121212"){admin=true;adminName="จุติมา"}
+ if(admin){
   loginBtn.style.display="none";
   logoutBtn.style.display="inline-block";
   exportBtn.style.display="inline-block";
-  render();
+  document.getElementById("keymanBox").style.display="block";
+  document.getElementById("keystatusBox").style.display="block";
  }
-}
-
-function logoutAdmin(){
- admin=false;
- adminName="";
- loginBtn.style.display="inline-block";
- logoutBtn.style.display="none";
- exportBtn.style.display="none";
  render();
 }
 
-async function saveBooking(){
- const d=document.getElementById("date").value;
- if(!d || d<today) return alert("ห้ามเลือกย้อนหลัง");
-
- const duplicated=bookings.find(b=>
-  getDateKey(b.date)===d &&
-  b.car===carSel.value &&
-  b.status!=="ไม่อนุมัติ"
- );
-
- if(duplicated) return alert("รถคันนี้ถูกใช้งานแล้ว");
-
- const p1=p1Sel.value;
- const p2=p2Sel.value;
- const driver=driverSel.value;
-
- if((p1 && p1===driver)||(p2 && p2===driver)) return alert("ชื่อซ้ำผู้ขับ");
- if(p1 && p2 && p1===p2) return alert("ผู้ร่วมเดินทางซ้ำกัน");
-
- await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${encodeURIComponent(carSel.value)}&project=${encodeURIComponent(document.getElementById("project").value)}&driver=${encodeURIComponent(driver)}&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}&start=${document.getElementById("start").value}&end=${document.getElementById("end").value}`);
-
- await loadData();
- alert("บันทึกสำเร็จ");
+function logoutAdmin(){
+ admin=false;adminName="";
+ loginBtn.style.display="inline-block";
+ logoutBtn.style.display="none";
+ exportBtn.style.display="none";
+ document.getElementById("keymanBox").style.display="none";
+ document.getElementById("keystatusBox").style.display="none";
+ render();
 }
 
-async function updateStatus(id,status){
- try{
-  await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
-  await loadData();
- }catch{alert("อัปเดตไม่สำเร็จ")}
+function exportCSV(){
+ let csv="date,car,project,driver,start,end,status\n";
+ bookings.forEach(b=>{
+  csv+=`${b.date},${b.car},${b.project},${b.driver},${formatTime(b.start)},${formatTime(b.end)},${b.status}\n`;
+ });
+ let blob=new Blob([csv]);
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="fleet.csv";
+ a.click();
 }
 
-function approve(id){updateStatus(id,"อนุมัติ")}
-function deny(id){updateStatus(id,"ไม่อนุมัติ")}
-
-async function deleteRow(id){
- if(!admin) return;
- if(!confirm("ลบรายการ ?")) return;
-
- try{
-  await fetch(`${API}?action=delete&id=${id}`);
-  await loadData();
- }catch{alert("ลบไม่สำเร็จ")}
-}
-
-function setTempKey(id,val,type){
- if(!tempKeyData[id]) tempKeyData[id]={};
- tempKeyData[id][type]=val;
-}
-
-async function saveKey(id){
- const row=bookings.find(x=>x.id==id)||{};
- const data=tempKeyData[id]||{};
-
- const keyman=data.keyman!==undefined ? data.keyman : (row.keyman||"");
- const keystatus=data.keystatus!==undefined ? data.keystatus : (row.keystatus||"");
-
- try{
-  await fetch(`${API}?action=updateKey&id=${id}&keyman=${encodeURIComponent(keyman)}&keystatus=${encodeURIComponent(keystatus)}`);
-  await loadData();
- }catch{alert("บันทึกกุญแจไม่สำเร็จ")}
+function formatTime(t){
+ if(!t) return "--:--";
+ let str = t.toString();
+ if(str.includes("T")){
+   let timePart = str.split("T")[1];
+   return timePart.substring(0,5);
+ }
+ if(str.includes(":")){
+   let sp = str.split(":");
+   return sp[0].padStart(2,'0')+":"+sp[1];
+ }
+ return "--:--";
 }
 
 function isOverdue(b){
@@ -434,33 +299,99 @@ function isOverdue(b){
   const now=new Date();
   const end=new Date(getDateKey(b.date)+"T"+formatTime(b.end)+":00");
   return now>end;
- }catch{return false}
+ }catch(e){return false}
 }
 
-function exportCSV(){
- let csv="วันที่,รถ,โครงการ,ผู้ขับ,เวลาเริ่ม,เวลาจบ,สถานะ
-";
- 
- bookings.forEach(b=>{
-  csv += `${formatDate(b.date)},${b.car},${b.project},${b.driver},${formatTime(b.start)},${formatTime(b.end)},${b.status}
-`;
- });
-
- const blob = new Blob([csv],{
-  type:'text/csv;charset=utf-8;'
- });
-
- const a = document.createElement("a");
- a.href = URL.createObjectURL(blob);
- a.download = "fleet.csv";
- a.click();
+function formatDate(d){
+ if(!d) return "-";
+ try{
+  const dt = new Date(d);
+  const day = String(dt.toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok'})).split('/');
+  return `${day[0]}/${day[1]}/${day[2]}`;
+ }catch(e){
+  return "-";
+ }
 }
+
+
+async function deleteRow(id){
+ if(!admin) return alert("เฉพาะ admin");
+ if(!confirm("ลบรายการนี้ ?")) return;
+ try{
+  await fetch(`${API}?action=delete&id=${id}&ts=`+Date.now());
+  await loadData();
+ }catch(e){
+  alert("ลบไม่สำเร็จ");
+ }
+}
+
+function approve(id){ updateStatus(id,"อนุมัติ") }
+function deny(id){ updateStatus(id,"ไม่อนุมัติ") }
+
+async function updateStatus(id,status){
+ try{
+  await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
+  await loadData();
+ }catch(e){
+  alert("อัปเดตสถานะไม่สำเร็จ");
+ }
+}
+
+async function saveBooking(){
+ const d=document.getElementById("date").value;
+ if(!d || d<today) return alert("ห้ามเลือกย้อนหลัง");
+
+ const driver=driverSel.value;
+ const p1=p1Sel.value;
+ const p2=p2Sel.value;
+
+ if(!driver) return alert("ต้องเลือกผู้ขับ");
+ if((p1 && p1===driver) || (p2 && p2===driver)) return alert("ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
+ if(p1 && p2 && p1===p2) return alert("ผู้ร่วมเดินทางห้ามซ้ำกัน");
+
+ const start=document.getElementById("start");
+ const end=document.getElementById("end");
+
+ // 🔥 add return timestamp when คืน
+ const isReturn = keyStatusSel.value === "คืน";
+ const returnTs = isReturn ? new Date().toISOString() : "";
+
+ await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}&keyman=${keymanSel.value||""}&keystatus=${keyStatusSel.value||""}&return_ts=${returnTs}`);
+ await loadData();
+ alert("บันทึกสำเร็จ");
+}
+
+function updatePeopleDropdown(){
+ const driver=driverSel.value;
+ const p1=p1Sel.value;
+ const p2=p2Sel.value;
+
+ [driverSel,p1Sel,p2Sel].forEach(sel=>{
+  Array.from(sel.options).forEach(opt=> opt.disabled=false);
+ });
+
+ [driverSel,p1Sel,p2Sel].forEach(sel=>{
+  Array.from(sel.options).forEach(opt=>{
+    if(opt.value && (
+      (opt.value===driver && sel!==driverSel) ||
+      (opt.value===p1 && sel!==p1Sel) ||
+      (opt.value===p2 && sel!==p2Sel)
+    )){
+      opt.disabled=true;
+    }
+  });
+ });
+}
+
+[driverSel,p1Sel,p2Sel].forEach(sel=>{
+ sel.addEventListener("change",updatePeopleDropdown);
+});
 
 window.onload=()=>{
  loadData();
  updatePeopleDropdown();
- setInterval(loadData,3000);
-}
+};
+
 </script>
 </body>
 </html>
