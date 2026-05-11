@@ -232,14 +232,43 @@ function render(){
 }
 
 function renderPagination(){
+
  let total=Math.ceil(viewData.length/perPage);
- if(total<=1){document.getElementById("page").innerHTML="";return}
+
+ if(total<=1){
+  document.getElementById("page").innerHTML="";
+  return;
+ }
 
  let html="";
  html+=`<button onclick='prevPage()'><</button>`;
 
- for(let i=1;i<=total;i++){
-  html+=`<button onclick='goPage(${i})' ${i===page?"style=\"background:#0a8a2a\"":""}>${i}</button>`;
+ // แสดงแค่ใกล้หน้าปัจจุบัน
+ let start=Math.max(1,page-2);
+ let end=Math.min(total,page+2);
+
+ // หน้าแรก
+ if(start>1){
+  html+=`<button onclick='goPage(1)'>1</button>`;
+  if(start>2){
+   html+=`<span> ... </span>`;
+  }
+ }
+
+ // หน้ากลาง
+ for(let i=start;i<=end;i++){
+  html+=`<button onclick='goPage(${i})'
+  ${i===page?"style=\"background:#0a8a2a\"":""}>
+  ${i}
+  </button>`;
+ }
+
+ // หน้าสุดท้าย
+ if(end<total){
+  if(end<total-1){
+   html+=`<span> ... </span>`;
+  }
+  html+=`<button onclick='goPage(${total})'>${total}</button>`;
  }
 
  html+=`<button onclick='nextPage()'>>></button>`;
