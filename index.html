@@ -92,17 +92,21 @@ const driverSel=document.getElementById("driver");
 const p1Sel=document.getElementById("p1");
 const p2Sel=document.getElementById("p2");
 
+const filterCar=document.getElementById("fcar") || document.getElementById("filterCar");
+
 cars.forEach(c=>{
  carSel.add(new Option(c,c));
- document.getElementById("fcar").add(new Option(c,c));
+ if(filterCar) filterCar.add(new Option(c,c));
 });
-document.getElementById("fcar").add(new Option("ทั้งหมด",""),0);
+if(filterCar) filterCar.add(new Option("ทั้งหมด",""),0);
+
+const filterDriver=document.getElementById("fdriver") || document.getElementById("filterDriver");
 
 people.forEach(p=>{
  driverSel.add(new Option(p,p));
- document.getElementById("fdriver").add(new Option(p,p));
+ if(filterDriver) filterDriver.add(new Option(p,p));
 });
-document.getElementById("fdriver").add(new Option("ทั้งหมด",""),0);
+if(filterDriver) filterDriver.add(new Option("ทั้งหมด",""),0);
 
 [p1Sel,p2Sel].forEach(sel=>{
  sel.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
@@ -266,9 +270,9 @@ function nextPage(){const total=Math.ceil(viewData.length/perPage); page++; if(p
 function goPage(p){page=p; render();}
 
 function filterData(){
- const fc=document.getElementById("fcar").value;
- const fd=document.getElementById("fdriver").value;
- const fdt=document.getElementById("fdate").value;
+ const fc=(document.getElementById("fcar") || document.getElementById("filterCar"))?.value || "";
+ const fd=(document.getElementById("fdriver") || document.getElementById("filterDriver"))?.value || "";
+ const fdt=(document.getElementById("fdate") || document.getElementById("filterDate"))?.value || "";
 
  viewData=bookings.filter(b=>
  (!fc||b.car===fc) &&
