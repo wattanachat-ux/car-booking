@@ -118,26 +118,39 @@ document.getElementById("date").min=today;
 
 // 🔥 normalize วันที่ (ตัวแก้ bug หลัก)
 // 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
-function getDateKey(val){
- if(!val) return "";
+function getDateKey(v){
+
+ if(!v) return "";
 
  try{
 
-  // ถ้าเป็น yyyy-mm-dd อยู่แล้ว
-  if(typeof val === "string" && val.includes("-") && val.length >= 10){
-    return val.substring(0,10);
+  // ถ้าเป็น string yyyy-mm-dd อยู่แล้ว
+  if(typeof v === "string"){
+
+    // ตัด ISO ออก
+    if(v.includes("T")){
+      return v.split("T")[0];
+    }
+
+    // yyyy-mm-dd
+    if(v.match(/^\\d{4}-\\d{2}-\\d{2}$/)){
+      return v;
+    }
+
   }
 
-  const d = new Date(val);
+  const d = new Date(v);
 
-  const year = d.getFullYear();
-  const month = String(d.getMonth()+1).padStart(2,'0');
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
   const day = String(d.getDate()).padStart(2,'0');
 
-  return `${year}-${month}-${day}`;
+  return `${y}-${m}-${day}`;
 
  }catch(e){
+
   return "";
+
  }
 }
 
