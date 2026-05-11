@@ -120,9 +120,22 @@ document.getElementById("date").min=today;
 // 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
 function getDateKey(val){
  if(!val) return "";
+
  try{
+
+  // ถ้าเป็น yyyy-mm-dd อยู่แล้ว
+  if(typeof val === "string" && val.includes("-") && val.length >= 10){
+    return val.substring(0,10);
+  }
+
   const d = new Date(val);
-  return d.toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}); // yyyy-mm-dd
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+
+  return `${year}-${month}-${day}`;
+
  }catch(e){
   return "";
  }
