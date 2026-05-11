@@ -118,25 +118,16 @@ document.getElementById("date").min=today;
 
 // 🔥 normalize วันที่ (ตัวแก้ bug หลัก)
 // 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
-function formatTime(t){
-  if(!t) return "--:--";
-  // ถ้าเป็นรูปแบบเวลาแบบ 01:23:00 หรือ 1:23:00
-  if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(t)) {
-    const [hh, mm] = t.split(":");
-    return hh.padStart(2, '0') + ":" + mm;
-  }
-  // ถ้ามี T (ISO string)
-  if (typeof t === "string" && t.includes("T")) {
-    const timePart = t.split("T")[1].substring(0,5);
-    return timePart;
-  }
-  // ถ้าเป็น timestamp number
-  if (!isNaN(t)) {
-    const d = new Date(Number(t));
-    return d.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
-  }
-  return "--:--";
+function getDateKey(val){
+ if(!val) return "";
+ try{
+  const d = new Date(val);
+  return d.toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}); // yyyy-mm-dd
+ }catch(e){
+  return "";
+ }
 }
+
 async function loadData(){
  try{
   const res = await fetch(API+"?ts="+Date.now());
@@ -156,27 +147,15 @@ async function loadData(){
 setInterval(loadData,3000);
 
 function renderDash(){
-  const d = document.getElementById("date").value;
-  if(!d){ 
-    document.getElementById("dash").innerHTML = "รถที่ใช้งาน: (ยังไม่ได้เลือกวันที่)";
-    return;
-  }
-  let html = "รถที่ใช้งาน:";
-  cars.forEach(c => {
-    const busy = bookings.find(b => {
-      // normalize date ทั้งคู่ เพราะบางค่าเก็บ 11/05/2026 บางค่าคือ 2026-05-11
-      const sheetDate = getDateKey(b.date);
-      const inputDate = getDateKey(d);
-      return sheetDate === inputDate && b.car === c && b.status === "อนุมัติ";
-    });
-    if(busy){
-      html += ` 🔴 ${c}`;
-    } else {
-      html += ` 🟢 ${c}`;
-    }
-  });
-  document.getElementById("dash").innerHTML = html;
+ const d=document.getElementById("date").value;
+ let html="รถที่ใช้งาน:";
+ cars.forEach(c=>{
+  let busy=bookings.find(b=> getDateKey(b.date)===d && b.car===c && b.status==="อนุมัติ");
+  if(busy) html+=` 🔴 ${c}`;
+ });
+ document.getElementById("dash").innerHTML=html;
 }
+
 function render(){
  let startIndex=(page-1)*perPage;
  let data=viewData.slice(startIndex,startIndex+perPage);
