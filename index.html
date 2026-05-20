@@ -139,11 +139,14 @@ const keyStatusSel = document.getElementById("keystatus");
 const fcarSel      = document.getElementById("fcar");
 const fdriverSel   = document.getElementById("fdriver");
 
+// ✅ "ทั้งหมด" ต้องอยู่หัวสุดเสมอ เพื่อให้ default เป็นทั้งหมดตอนเปิดหน้า
+fcarSel.add(new Option("ทั้งหมด", ""));
+fdriverSel.add(new Option("ทั้งหมด", ""));
+
 cars.forEach(c => {
   carSel.add(new Option(c, c));
   fcarSel.add(new Option(c, c));
 });
-fcarSel.add(new Option("ทั้งหมด", ""));
 
 [p1Sel, p2Sel].forEach(s => s.add(new Option("-- ไม่มี --", "")));
 people.forEach(p => {
@@ -151,7 +154,6 @@ people.forEach(p => {
   fdriverSel.add(new Option(p, p));
   [p1Sel, p2Sel].forEach(s => s.add(new Option(p, p)));
 });
-fdriverSel.add(new Option("ทั้งหมด", ""));
 
 keymanList.forEach(n => keymanSel.add(new Option(n, n)));
 
@@ -180,12 +182,29 @@ function formatDate(d) {
 
 function formatTime(t) {
   if (!t) return "--:--";
-  const str = t.toString();
-  if (str.includes("T")) return str.split("T")[1].substring(0, 5);
+  const str = t.toString().trim();
+
+  // กรณี Google Sheet ส่งมาเป็น "1899-12-30T01:47:00.000Z" (timezone bug ของ Sheet)
+  if (str.includes("T")) {
+    try {
+      // ดึงเฉพาะเวลา HH:MM จาก ISO string โดยตรง (ไม่แปลง timezone เพราะ Sheet เก็บผิด base date)
+      const timePart = str.split("T")[1];          // "01:47:00.000Z"
+      const hh = timePart.substring(0, 2);
+      const mm = timePart.substring(3, 5);
+      // บวก 7 ชั่วโมง (UTC → Bangkok)
+      const totalMin = parseInt(hh) * 60 + parseInt(mm) + 7 * 60;
+      const realHH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0');
+      const realMM = String(totalMin % 60).padStart(2, '0');
+      return realHH + ":" + realMM;
+    } catch(e) { return "--:--"; }
+  }
+
+  // กรณีส่งมาเป็น "08:30" ปกติ
   if (str.includes(":")) {
     const sp = str.split(":");
-    return sp[0].padStart(2, '0') + ":" + sp[1];
+    return sp[0].padStart(2, '0') + ":" + sp[1].substring(0, 2);
   }
+
   return "--:--";
 }
 
@@ -297,12 +316,26 @@ function render() {
 function renderPagination() {
   const total = Math.ceil(viewData.length / perPage);
   if (total <= 1) { document.getElementById("page").innerHTML = ""; return; }
+
   let html = `<button class="btn-gray" onclick="prevPage()">◀</button> `;
-  for (let i = 1; i <= total; i++) {
+
+  // แสดงเฉพาะ 5 หน้ารอบๆ หน้าปัจจุบัน
+  let startP = Math.max(1, page - 2);
+  let endP   = Math.min(total, startP + 4);
+  if (endP - startP < 4) startP = Math.max(1, endP - 4);
+
+  if (startP > 1) {
+    html += `<button onclick="goPage(1)">1</button><span style="padding:0 6px;line-height:34px">…</span>`;
+  }
+  for (let i = startP; i <= endP; i++) {
     const active = i === page ? 'style="background:#0a8a2a;color:#fff"' : '';
     html += `<button ${active} onclick="goPage(${i})">${i}</button> `;
   }
-  html += `<button class="btn-gray" onclick="nextPage()">▶</button>`;
+  if (endP < total) {
+    html += `<span style="padding:0 6px;line-height:34px">…</span><button onclick="goPage(${total})">${total}</button>`;
+  }
+
+  html += ` <button class="btn-gray" onclick="nextPage()">▶</button>`;
   document.getElementById("page").innerHTML = html;
 }
 
