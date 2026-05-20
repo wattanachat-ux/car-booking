@@ -2,396 +2,493 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>เอกสารเบิกรถ Guts IOC</title>
 <style>
-body{font-family:Arial;background:#eef2f7;padding:20px}
-.card{background:#fff;padding:20px;border-radius:12px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
-h2{margin-top:0}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
-input,select{padding:8px;border:1px solid #ccc;border-radius:8px}
-button{border:none;border-radius:8px;background:#2d6cdf;color:#fff;font-weight:bold;cursor:pointer;padding:10px}
-button.red{background:#e5533d}
-button.green{background:#0a8a2a}
-button.purple{background:#7b2cff}
-button.gray{background:#555}
-.table{width:100%;border-collapse:collapse;margin-top:20px}
-.table th,.table td{border:1px solid #ccc;padding:6px;text-align:center}
-.badge{padding:4px 10px;border-radius:20px;color:#fff;font-size:12px}
-.badge.wait{background:#d18b00}
-.badge.ok{background:#0a8a2a}
-.badge.no{background:#c10000}
-.dashboard{margin-top:15px;font-weight:bold}
-.filter{margin-top:15px}
-.pagination{margin-top:15px;text-align:center}
-.pagination button{margin:2px;padding:6px 12px}
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',Arial,sans-serif;background:#eef2f7;padding:20px;font-size:15px}
+  .card{background:#fff;padding:24px;border-radius:14px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+  h2{margin-bottom:20px;color:#1a1a2e;font-size:22px}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .grid label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:600}
+  input,select{width:100%;padding:9px 10px;border:1.5px solid #ccc;border-radius:8px;font-family:inherit;font-size:14px;transition:border .2s}
+  input:focus,select:focus{outline:none;border-color:#2d6cdf}
+
+  .btn-row{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  button{border:none;border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;padding:10px 18px;font-size:14px;transition:opacity .15s}
+  button:hover{opacity:.85}
+  .btn-blue{background:#2d6cdf;color:#fff}
+  .btn-red{background:#e5533d;color:#fff}
+  .btn-green{background:#0a8a2a;color:#fff}
+  .btn-purple{background:#7b2cff;color:#fff}
+  .btn-gray{background:#555;color:#fff}
+
+  .dashboard{margin-top:18px;padding:10px 14px;background:#f0f4ff;border-radius:8px;font-weight:600;font-size:14px;color:#1a1a2e}
+
+  .filter{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .filter select,.filter input{width:auto;min-width:140px}
+
+  .table-wrap{overflow-x:auto;margin-top:20px}
+  table{width:100%;border-collapse:collapse;min-width:900px}
+  th,td{border:1px solid #ddd;padding:8px 10px;text-align:center;font-size:13px}
+  th{background:#1a1a2e;color:#fff;font-weight:600}
+  tr:nth-child(even){background:#f8f9fc}
+
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;color:#fff;font-size:12px;font-weight:600}
+  .badge.wait{background:#d18b00}
+  .badge.ok{background:#0a8a2a}
+  .badge.no{background:#c10000}
+
+  .pagination{margin-top:14px;text-align:center}
+  .pagination button{margin:2px;padding:6px 13px;font-size:13px}
+
+  .overdue{background:#ffdddd !important}
+
+  .spinner{text-align:center;padding:20px;color:#888;font-size:14px}
 </style>
 </head>
 <body>
 
 <div class="card">
-<h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
+  <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
 
-<div class="grid">
-<div><label>วันที่</label><input type="date" id="date" onchange="renderDash()"></div>
-<div><label>ทะเบียนรถ</label><select id="car"></select></div>
-<div><label>โครงการ</label><input id="project"></div>
-<div><label>ผู้ขับ</label><select id="driver"></select></div>
-<div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
-<div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
-<div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
-<div><label>เวลาจบ</label><input type="time" id="end"></div>
-<div id="keymanBox" style="display:none"><label>ผู้จ่ายกุญแจ</label><select id="keyman"></select></div>
-<div id="keystatusBox" style="display:none"><label>สถานะกุญแจ</label><select id="keystatus"><option value="">-</option><option value="เบิก">เบิก</option><option value="คืน">คืน</option></select></div>
-</div>
+  <div class="grid">
+    <div><label>วันที่</label><input type="date" id="date" onchange="renderDash()"></div>
+    <div><label>ทะเบียนรถ</label><select id="car"></select></div>
+    <div><label>โครงการ</label><input id="project" placeholder="ชื่อโครงการ"></div>
+    <div><label>ผู้ขับ</label><select id="driver"></select></div>
+    <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
+    <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+    <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+    <div><label>เวลาจบ</label><input type="time" id="end"></div>
+    <div id="keymanBox" style="display:none"><label>ผู้จ่ายกุญแจ</label><select id="keyman"></select></div>
+    <div id="keystatusBox" style="display:none"><label>สถานะกุญแจ</label><select id="keystatus"><option value="">-</option><option value="เบิก">เบิก</option><option value="คืน">คืน</option></select></div>
+  </div>
 
-<br>
-<button onclick="saveBooking()">บันทึก</button>
-<button class="green" id="exportBtn" style="display:none" onclick="exportCSV()">Export CSV</button>
-<button class="red" onclick="loginAdmin()" id="loginBtn">Admin Login</button>
-<button class="purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">Logout Admin</button>
+  <div class="btn-row">
+    <button class="btn-blue" onclick="saveBooking()">💾 บันทึก</button>
+    <button class="btn-red" onclick="loginAdmin()" id="loginBtn">🔑 Admin Login</button>
+    <button class="btn-purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">🚪 Logout</button>
+    <button class="btn-green" id="exportBtn" style="display:none" onclick="exportCSV()">📥 Export CSV</button>
+  </div>
 
-<div class="dashboard" id="dash"></div>
+  <div class="dashboard" id="dash">กำลังโหลด...</div>
 
-<div class="filter">
-<select id="fcar"></select>
-<select id="fdriver"></select>
-<input type="date" id="fdate">
-<button onclick="filterData()">Filter</button>
-</div>
+  <div class="filter">
+    <div><label style="font-size:12px;font-weight:600;color:#555">กรองรถ</label><select id="fcar"></select></div>
+    <div><label style="font-size:12px;font-weight:600;color:#555">กรองผู้ขับ</label><select id="fdriver"></select></div>
+    <div><label style="font-size:12px;font-weight:600;color:#555">กรองวันที่</label><input type="date" id="fdate"></div>
+    <button class="btn-blue" onclick="filterData()">🔍 Filter</button>
+    <button class="btn-gray" onclick="clearFilter()">✖ ล้าง</button>
+  </div>
 
-<table class="table">
-<thead>
-<tr>
-<th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th><th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>ผู้จ่ายกุญแจ</th><th>สถานะกุญแจ</th><th>สถานะ</th><th>อนุมัติ</th>
-</tr>
-</thead>
-<tbody id="tb"></tbody>
-</table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th>
+          <th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>ผู้จ่ายกุญแจ</th>
+          <th>สถานะกุญแจ</th><th>สถานะ</th><th>อนุมัติโดย</th>
+        </tr>
+      </thead>
+      <tbody id="tb"><tr><td colspan="10" class="spinner">⏳ กำลังโหลดข้อมูล...</td></tr></tbody>
+    </table>
+  </div>
 
-<div class="pagination" id="page"></div>
-
+  <div class="pagination" id="page"></div>
 </div>
 
 <script>
+// ========== CONFIG ==========
+const API = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
 
-const API="https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
+const cars = [
+  "toyota yaris 6กญ1240",
+  "toyota yaris 6กฌ9085",
+  "toyota revo 1ฒภ6727",
+  "toyota revo 2ฒข4846"
+];
 
-let bookings=[];
-let viewData=[];
-let admin=false;
-let adminName="";
-let page=1;
-let perPage=5;
+const people = [
+  "จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร",
+  "ปฏิภาณ","ชุติเดช","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต",
+  "เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"
+];
 
-const cars=["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
-const people=["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","ปฏิภาณ","ชุติเดช","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
+const keymanList = ["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"];
 
-const carSel=document.getElementById("car");
-const driverSel=document.getElementById("driver");
-const p1Sel=document.getElementById("p1");
-const p2Sel=document.getElementById("p2");
-const keymanSel=document.getElementById("keyman");
-const keyStatusSel=document.getElementById("keystatus");
+// ========== STATE ==========
+let bookings = [];
+let viewData = [];
+let admin = false;
+let adminName = "";
+let page = 1;
+const perPage = 10;
+let autoRefreshTimer = null;
 
-cars.forEach(c=>{
- carSel.add(new Option(c,c));
- document.getElementById("fcar").add(new Option(c,c));
+// ========== INIT DROPDOWNS ==========
+const carSel       = document.getElementById("car");
+const driverSel    = document.getElementById("driver");
+const p1Sel        = document.getElementById("p1");
+const p2Sel        = document.getElementById("p2");
+const keymanSel    = document.getElementById("keyman");
+const keyStatusSel = document.getElementById("keystatus");
+const fcarSel      = document.getElementById("fcar");
+const fdriverSel   = document.getElementById("fdriver");
+
+cars.forEach(c => {
+  carSel.add(new Option(c, c));
+  fcarSel.add(new Option(c, c));
 });
-document.getElementById("fcar").add(new Option("ทั้งหมด",""));
+fcarSel.add(new Option("ทั้งหมด", ""));
 
-people.forEach(p=>{
- driverSel.add(new Option(p,p));
- document.getElementById("fdriver").add(new Option(p,p));
+[p1Sel, p2Sel].forEach(s => s.add(new Option("-- ไม่มี --", "")));
+people.forEach(p => {
+  driverSel.add(new Option(p, p));
+  fdriverSel.add(new Option(p, p));
+  [p1Sel, p2Sel].forEach(s => s.add(new Option(p, p)));
 });
-document.getElementById("fdriver").add(new Option("ทั้งหมด",""));
+fdriverSel.add(new Option("ทั้งหมด", ""));
 
-[p1Sel,p2Sel].forEach(s=>{
- s.add(new Option("-- ไม่มีผู้ร่วมเดินทาง --",""));
- people.forEach(p=>s.add(new Option(p,p)));
-});
-["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"].forEach(n=>{
- keymanSel.add(new Option(n,n));
-});
+keymanList.forEach(n => keymanSel.add(new Option(n, n)));
 
-const today=new Date().toISOString().split("T")[0];
-document.getElementById("date").min=today;
+// ========== DATE (Bangkok timezone) ==========
+// ✅ แก้ข้อ 3: today ใช้ Bangkok timezone ไม่ใช่ UTC
+const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+document.getElementById("date").min = today;
 
-// 🔥 normalize วันที่ (ตัวแก้ bug หลัก)
-// 🔥 FIX TIMEZONE จริง (แก้เพี้ยน 100%)
-function getDateKey(val){
- if(!val) return "";
- try{
-  const d = new Date(val);
-  return d.toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'}); // yyyy-mm-dd
- }catch(e){
-  return "";
- }
+// ========== HELPERS ==========
+function getDateKey(val) {
+  if (!val) return "";
+  try {
+    const d = new Date(val);
+    return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+  } catch(e) { return ""; }
 }
 
-async function loadData(){
- try{
-  const res = await fetch(API+"?ts="+Date.now());
-  const txt = await res.text();
-  bookings = JSON.parse(txt);
-  bookings.sort((a,b)=> Number(b.id) - Number(a.id));
- }catch(e){
-  alert("โหลดข้อมูลจาก Sheet ไม่ได้");
-  bookings=[];
- }
- viewData=[...bookings];
- if(page>Math.ceil(viewData.length/perPage)) page=1;
- render();
- renderDash();
+function formatDate(d) {
+  if (!d) return "-";
+  try {
+    const dt = new Date(d);
+    const parts = dt.toLocaleDateString('en-GB', { timeZone: 'Asia/Bangkok' }).split('/');
+    return `${parts[0]}/${parts[1]}/${parts[2]}`;
+  } catch(e) { return "-"; }
 }
 
-setInterval(loadData,3000);
-
-function renderDash(){
- const d=document.getElementById("date").value;
- let html="รถที่ใช้งาน:";
- cars.forEach(c=>{
-  let busy=bookings.find(b=> getDateKey(b.date)===d && b.car===c && b.status==="อนุมัติ");
-  if(busy) html+=` 🔴 ${c}`;
- });
- document.getElementById("dash").innerHTML=html;
+function formatTime(t) {
+  if (!t) return "--:--";
+  const str = t.toString();
+  if (str.includes("T")) return str.split("T")[1].substring(0, 5);
+  if (str.includes(":")) {
+    const sp = str.split(":");
+    return sp[0].padStart(2, '0') + ":" + sp[1];
+  }
+  return "--:--";
 }
 
-function render(){
- let startIndex=(page-1)*perPage;
- let data=viewData.slice(startIndex,startIndex+perPage);
- let html="";
+function isOverdue(b) {
+  try {
+    if (!b.keystatus || b.keystatus === "คืน") return false;
+    const endTime = formatTime(b.end);
+    if (endTime === "--:--") return false;
+    const endDt = new Date(getDateKey(b.date) + "T" + endTime + ":00");
+    return new Date() > endDt;
+  } catch(e) { return false; }
+}
 
- data.forEach(b=>{
+// ========== LOAD DATA ==========
+async function loadData() {
+  try {
+    const res = await fetch(API + "?ts=" + Date.now());
+    const txt = await res.text();
+    bookings = JSON.parse(txt);
+    bookings.sort((a, b) => Number(b.id) - Number(a.id));
+  } catch(e) {
+    document.getElementById("tb").innerHTML = '<tr><td colspan="10" style="color:red">⚠️ โหลดข้อมูลไม่ได้ กรุณา refresh</td></tr>';
+    return;
+  }
+  // คงสภาพ filter ปัจจุบัน
+  filterData(false);
+  renderDash();
+}
 
-  let badge="<span class='badge wait'>รออนุมัติ</span>";
-  if(b.status==="อนุมัติ") badge="<span class='badge ok'>อนุมัติ</span>";
-  if(b.status==="ไม่อนุมัติ") badge="<span class='badge no'>ไม่อนุมัติ</span>";
+// ✅ แก้ข้อ 4: refresh ทุก 20 วินาที (จากเดิม 3 วินาที)
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(loadData, 20000);
+}
 
-  let action = (b.approved || b.approvedBy) ? `<span style='font-weight:bold;color:#0a8a2a'>${b.approved || b.approvedBy}</span>` : "-";
+// ========== DASHBOARD ==========
+function renderDash() {
+  const d = document.getElementById("date").value;
+  if (!d) { document.getElementById("dash").innerHTML = "📅 เลือกวันที่เพื่อดูสถานะรถ"; return; }
+  let html = "📊 สถานะรถวันที่ " + formatDate(d + "T00:00:00") + " → ";
+  let found = false;
+  cars.forEach(c => {
+    const busy = bookings.find(b => getDateKey(b.date) === d && b.car === c && b.status === "อนุมัติ");
+    if (busy) { html += ` 🔴 ${c} `; found = true; }
+  });
+  if (!found) html += " ✅ รถว่างทุกคัน";
+  document.getElementById("dash").innerHTML = html;
+}
 
-  if(admin){
-    if(b.status==="รออนุมัติ"){
+// ========== RENDER TABLE ==========
+function render() {
+  const start = (page - 1) * perPage;
+  const data = viewData.slice(start, start + perPage);
+  let html = "";
 
-      let alreadyApproved = bookings.find(x=>getDateKey(x.date)===getDateKey(b.date) && x.car===b.car && x.status==="อนุมัติ");
-
-      if(alreadyApproved){
-        action="❌ มีคันนี้อนุมัติแล้ว";
-      }else{
-        action=`<button class='green' onclick='approve("${b.id}")'>อนุมัติ</button>
-                <button class='red' onclick='deny("${b.id}")'>ไม่อนุมัติ</button>
-                <button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
-      }
-
-    }else{
-      action=`<button class='gray' onclick='deleteRow("${b.id}")'>ลบ</button>`;
-    }
+  if (data.length === 0) {
+    html = '<tr><td colspan="10" style="color:#888;padding:20px">ไม่มีข้อมูล</td></tr>';
   }
 
-  html+=`<tr>
-   <td>${formatDate(b.date)}</td>
-   <td>${b.car}</td>
-   <td>${b.project}</td>
-   <td>${b.driver}</td>
-   <td>${((b.p1&&b.p1!==""?b.p1:"") + (b.p2&&b.p2!==""? (b.p1?", ":"")+b.p2:"") ) || "ไม่มี"}</td>
-   <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
-   <td>${b.keyman || "-"}</td>
-   <td style="${(b.keystatus && b.keystatus!=='คืน' && isOverdue(b))?'background:#ffcccc':''}">${b.keystatus || "-"}</td>
-   <td>${badge}</td>
-   <td>${action}</td>
-  </tr>`;
- });
+  data.forEach(b => {
+    let badge = "<span class='badge wait'>รออนุมัติ</span>";
+    if (b.status === "อนุมัติ")    badge = "<span class='badge ok'>อนุมัติ</span>";
+    if (b.status === "ไม่อนุมัติ") badge = "<span class='badge no'>ไม่อนุมัติ</span>";
 
- document.getElementById("tb").innerHTML=html;
- renderPagination();
-}
+    let actionCell = b.approved || b.approvedby
+      ? `<span style='color:#0a8a2a;font-weight:bold'>${b.approved || b.approvedby}</span>`
+      : "-";
 
-function renderPagination(){
- let total=Math.ceil(viewData.length/perPage);
- if(total<=1){document.getElementById("page").innerHTML="";return}
-
- let html="";
- html+=`<button onclick='prevPage()'><</button>`;
-
- for(let i=1;i<=total;i++){
-  html+=`<button onclick='goPage(${i})' ${i===page?"style=\"background:#0a8a2a\"":""}>${i}</button>`;
- }
-
- html+=`<button onclick='nextPage()'>>></button>`;
-
- document.getElementById("page").innerHTML=html;
-}
-
-function prevPage(){page--; if(page<1)page=1; render()}
-function nextPage(){
- let total=Math.ceil(viewData.length/perPage);
- page++;
- if(page>total) page=total;
- render();
-}
-function goPage(p){page=p; render()}
-
-function filterData(){
- const fc=document.getElementById("fcar").value;
- const fd=document.getElementById("fdriver").value;
- const fdt=document.getElementById("fdate").value;
-
- viewData=bookings.filter(b=>{
-  const dKey = getDateKey(b.date);
-  return (!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt|| dKey===fdt);
- });
- page=1;
- render();
-}
-
-function loginAdmin(){
- let p=prompt("รหัส");
- if(p==="11223344"){admin=true;adminName="จิรศักดิ์"}
- if(p==="12121212"){admin=true;adminName="จุติมา"}
- if(admin){
-  loginBtn.style.display="none";
-  logoutBtn.style.display="inline-block";
-  exportBtn.style.display="inline-block";
-  document.getElementById("keymanBox").style.display="block";
-  document.getElementById("keystatusBox").style.display="block";
- }
- render();
-}
-
-function logoutAdmin(){
- admin=false;adminName="";
- loginBtn.style.display="inline-block";
- logoutBtn.style.display="none";
- exportBtn.style.display="none";
- document.getElementById("keymanBox").style.display="none";
- document.getElementById("keystatusBox").style.display="none";
- render();
-}
-
-function exportCSV(){
- let csv="date,car,project,driver,start,end,status\n";
- bookings.forEach(b=>{
-  csv+=`${b.date},${b.car},${b.project},${b.driver},${formatTime(b.start)},${formatTime(b.end)},${b.status}\n`;
- });
- let blob=new Blob([csv]);
- let a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="fleet.csv";
- a.click();
-}
-
-function formatTime(t){
- if(!t) return "--:--";
- let str = t.toString();
- if(str.includes("T")){
-   let timePart = str.split("T")[1];
-   return timePart.substring(0,5);
- }
- if(str.includes(":")){
-   let sp = str.split(":");
-   return sp[0].padStart(2,'0')+":"+sp[1];
- }
- return "--:--";
-}
-
-function isOverdue(b){
- try{
-  if(b.keystatus==="คืน") return false;
-  const now=new Date();
-  const end=new Date(getDateKey(b.date)+"T"+formatTime(b.end)+":00");
-  return now>end;
- }catch(e){return false}
-}
-
-function formatDate(d){
- if(!d) return "-";
- try{
-  const dt = new Date(d);
-  const day = String(dt.toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok'})).split('/');
-  return `${day[0]}/${day[1]}/${day[2]}`;
- }catch(e){
-  return "-";
- }
-}
-
-
-async function deleteRow(id){
- if(!admin) return alert("เฉพาะ admin");
- if(!confirm("ลบรายการนี้ ?")) return;
- try{
-  await fetch(`${API}?action=delete&id=${id}&ts=`+Date.now());
-  await loadData();
- }catch(e){
-  alert("ลบไม่สำเร็จ");
- }
-}
-
-function approve(id){ updateStatus(id,"อนุมัติ") }
-function deny(id){ updateStatus(id,"ไม่อนุมัติ") }
-
-async function updateStatus(id,status){
- try{
-  await fetch(`${API}?action=updateStatus&id=${id}&status=${status}&admin=${adminName}`);
-  await loadData();
- }catch(e){
-  alert("อัปเดตสถานะไม่สำเร็จ");
- }
-}
-
-async function saveBooking(){
- const d=document.getElementById("date").value;
- if(!d || d<today) return alert("ห้ามเลือกย้อนหลัง");
-
- const driver=driverSel.value;
- const p1=p1Sel.value;
- const p2=p2Sel.value;
-
- if(!driver) return alert("ต้องเลือกผู้ขับ");
- if((p1 && p1===driver) || (p2 && p2===driver)) return alert("ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
- if(p1 && p2 && p1===p2) return alert("ผู้ร่วมเดินทางห้ามซ้ำกัน");
-
- const start=document.getElementById("start");
- const end=document.getElementById("end");
-
- // 🔥 add return timestamp when คืน
- const isReturn = keyStatusSel.value === "คืน";
- const returnTs = isReturn ? new Date().toISOString() : "";
-
- await fetch(`${API}?action=save&id=${Date.now()}&date=${d}&car=${carSel.value}&project=${document.getElementById("project").value}&driver=${driverSel.value}&p1=${p1Sel.value}&p2=${p2Sel.value}&start=${start.value}&end=${end.value}&keyman=${keymanSel.value||""}&keystatus=${keyStatusSel.value||""}&return_ts=${returnTs}`);
- await loadData();
- alert("บันทึกสำเร็จ");
-}
-
-function updatePeopleDropdown(){
- const driver=driverSel.value;
- const p1=p1Sel.value;
- const p2=p2Sel.value;
-
- [driverSel,p1Sel,p2Sel].forEach(sel=>{
-  Array.from(sel.options).forEach(opt=> opt.disabled=false);
- });
-
- [driverSel,p1Sel,p2Sel].forEach(sel=>{
-  Array.from(sel.options).forEach(opt=>{
-    if(opt.value && (
-      (opt.value===driver && sel!==driverSel) ||
-      (opt.value===p1 && sel!==p1Sel) ||
-      (opt.value===p2 && sel!==p2Sel)
-    )){
-      opt.disabled=true;
+    if (admin) {
+      if (b.status === "รออนุมัติ") {
+        const alreadyApproved = bookings.find(x =>
+          getDateKey(x.date) === getDateKey(b.date) && x.car === b.car && x.status === "อนุมัติ"
+        );
+        if (alreadyApproved) {
+          actionCell = "<span style='color:#c10000'>❌ มีคันนี้อนุมัติแล้ว</span>";
+        } else {
+          actionCell = `
+            <button class="btn-green" onclick="approve('${b.id}')">✔ อนุมัติ</button>
+            <button class="btn-red" onclick="deny('${b.id}')">✖ ไม่อนุมัติ</button>
+            <button class="btn-gray" onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
+        }
+      } else {
+        actionCell = `<button class="btn-gray" onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
+      }
     }
+
+    const companions = [b.p1, b.p2].filter(x => x && x !== "").join(", ") || "ไม่มี";
+    const overdueClass = isOverdue(b) ? " class='overdue'" : "";
+
+    html += `<tr>
+      <td>${formatDate(b.date)}</td>
+      <td>${b.car || "-"}</td>
+      <td>${b.project || "-"}</td>
+      <td>${b.driver || "-"}</td>
+      <td>${companions}</td>
+      <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
+      <td>${b.keyman || "-"}</td>
+      <td${overdueClass}>${b.keystatus || "-"}</td>
+      <td>${badge}</td>
+      <td>${actionCell}</td>
+    </tr>`;
   });
- });
+
+  document.getElementById("tb").innerHTML = html;
+  renderPagination();
 }
 
-[driverSel,p1Sel,p2Sel].forEach(sel=>{
- sel.addEventListener("change",updatePeopleDropdown);
-});
+// ========== PAGINATION ==========
+function renderPagination() {
+  const total = Math.ceil(viewData.length / perPage);
+  if (total <= 1) { document.getElementById("page").innerHTML = ""; return; }
+  let html = `<button class="btn-gray" onclick="prevPage()">◀</button> `;
+  for (let i = 1; i <= total; i++) {
+    const active = i === page ? 'style="background:#0a8a2a;color:#fff"' : '';
+    html += `<button ${active} onclick="goPage(${i})">${i}</button> `;
+  }
+  html += `<button class="btn-gray" onclick="nextPage()">▶</button>`;
+  document.getElementById("page").innerHTML = html;
+}
 
-window.onload=()=>{
- loadData();
- updatePeopleDropdown();
+function prevPage() { if (page > 1) { page--; render(); } }
+function nextPage() { const t = Math.ceil(viewData.length / perPage); if (page < t) { page++; render(); } }
+function goPage(p) { page = p; render(); }
+
+// ========== FILTER ==========
+function filterData(resetPage = true) {
+  const fc  = fcarSel.value;
+  const fd  = fdriverSel.value;
+  const fdt = document.getElementById("fdate").value;
+  viewData = bookings.filter(b => {
+    return (!fc || b.car === fc) &&
+           (!fd || b.driver === fd) &&
+           (!fdt || getDateKey(b.date) === fdt);
+  });
+  if (resetPage) page = 1;
+  if (page > Math.ceil(viewData.length / perPage)) page = 1;
+  render();
+}
+
+function clearFilter() {
+  fcarSel.value = "";
+  fdriverSel.value = "";
+  document.getElementById("fdate").value = "";
+  filterData();
+}
+
+// ========== ADMIN LOGIN / LOGOUT ==========
+// ✅ แก้ข้อ 1: ส่ง password ไป verify ที่ Apps Script แทนเขียนใน code
+async function loginAdmin() {
+  const p = prompt("กรอกรหัส Admin:");
+  if (!p) return;
+  try {
+    const res = await fetch(`${API}?action=login&pwd=${encodeURIComponent(p)}&ts=${Date.now()}`);
+    const data = await res.json();
+    if (data.ok) {
+      admin = true;
+      adminName = data.name;
+      document.getElementById("loginBtn").style.display   = "none";
+      document.getElementById("logoutBtn").style.display  = "inline-block";
+      document.getElementById("exportBtn").style.display  = "inline-block";
+      document.getElementById("keymanBox").style.display  = "block";
+      document.getElementById("keystatusBox").style.display = "block";
+      render();
+    } else {
+      alert("❌ รหัสผิด กรุณาลองใหม่");
+    }
+  } catch(e) {
+    alert("⚠️ เชื่อมต่อ server ไม่ได้");
+  }
+}
+
+function logoutAdmin() {
+  admin = false; adminName = "";
+  document.getElementById("loginBtn").style.display   = "inline-block";
+  document.getElementById("logoutBtn").style.display  = "none";
+  document.getElementById("exportBtn").style.display  = "none";
+  document.getElementById("keymanBox").style.display  = "none";
+  document.getElementById("keystatusBox").style.display = "none";
+  render();
+}
+
+// ========== SAVE BOOKING ==========
+// ✅ แก้ข้อ 2: validate เวลา + ข้อ 5: try/catch + ข้อ 6: URLSearchParams (encode อัตโนมัติ)
+async function saveBooking() {
+  const d        = document.getElementById("date").value;
+  const startVal = document.getElementById("start").value;
+  const endVal   = document.getElementById("end").value;
+  const driver   = driverSel.value;
+  const p1       = p1Sel.value;
+  const p2       = p2Sel.value;
+
+  // Validate
+  if (!d)          return alert("⚠️ กรุณาเลือกวันที่");
+  if (d < today)   return alert("⚠️ ห้ามเลือกวันย้อนหลัง");
+  if (!driver)     return alert("⚠️ กรุณาเลือกผู้ขับ");
+  if (!startVal)   return alert("⚠️ กรุณากรอกเวลาเริ่ม");
+  if (!endVal)     return alert("⚠️ กรุณากรอกเวลาจบ");
+  if (endVal <= startVal) return alert("⚠️ เวลาจบต้องมากกว่าเวลาเริ่ม");
+  if ((p1 && p1 === driver) || (p2 && p2 === driver)) return alert("⚠️ ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
+  if (p1 && p2 && p1 === p2) return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
+
+  const isReturn = keyStatusSel.value === "คืน";
+  const returnTs = isReturn ? new Date().toISOString() : "";
+
+  // ✅ ข้อ 6: URLSearchParams จัดการ encode ให้อัตโนมัติ ไม่พัง แม้มีช่องว่างหรืออักขระพิเศษ
+  const params = new URLSearchParams({
+    action:    "save",
+    id:        Date.now().toString(),
+    date:      d,
+    car:       carSel.value,
+    project:   document.getElementById("project").value,
+    driver:    driver,
+    p1:        p1,
+    p2:        p2,
+    start:     startVal,
+    end:       endVal,
+    keyman:    keymanSel.value || "",
+    keystatus: keyStatusSel.value || "",
+    return_ts: returnTs
+  });
+
+  // ✅ ข้อ 5: try/catch ครอบทุก fetch
+  try {
+    const res = await fetch(`${API}?${params.toString()}`);
+    const txt = await res.text();
+    if (txt === "Saved") {
+      await loadData();
+      alert("✅ บันทึกสำเร็จ");
+    } else {
+      alert("⚠️ บันทึกไม่สำเร็จ กรุณาลองใหม่");
+    }
+  } catch(e) {
+    alert("⚠️ เชื่อมต่อ server ไม่ได้ กรุณาลองใหม่");
+  }
+}
+
+// ========== APPROVE / DENY / DELETE ==========
+function approve(id) { updateStatus(id, "อนุมัติ"); }
+function deny(id)    { updateStatus(id, "ไม่อนุมัติ"); }
+
+async function updateStatus(id, status) {
+  try {
+    await fetch(`${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(adminName)}`);
+    await loadData();
+  } catch(e) {
+    alert("⚠️ อัปเดตสถานะไม่สำเร็จ");
+  }
+}
+
+async function deleteRow(id) {
+  if (!admin) return alert("เฉพาะ Admin เท่านั้น");
+  if (!confirm("ต้องการลบรายการนี้ใช่ไหม?")) return;
+  try {
+    await fetch(`${API}?action=delete&id=${id}&ts=${Date.now()}`);
+    await loadData();
+  } catch(e) {
+    alert("⚠️ ลบไม่สำเร็จ");
+  }
+}
+
+// ========== EXPORT CSV ==========
+// ✅ เพิ่ม BOM (\uFEFF) แก้ Excel เปิดแล้วภาษาไทยแตก
+function exportCSV() {
+  let csv = "\uFEFF" + "วันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วม1,ผู้ร่วม2,เวลาเริ่ม,เวลาจบ,สถานะ,อนุมัติโดย\n";
+  bookings.forEach(b => {
+    csv += [
+      formatDate(b.date), b.car, b.project, b.driver,
+      b.p1 || "", b.p2 || "",
+      formatTime(b.start), formatTime(b.end),
+      b.status, b.approved || b.approvedby || ""
+    ].join(",") + "\n";
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "fleet_" + today + ".csv";
+  a.click();
+}
+
+// ========== PREVENT DUPLICATE SELECTION ==========
+function updatePeopleDropdown() {
+  const driver = driverSel.value;
+  const p1 = p1Sel.value;
+  const p2 = p2Sel.value;
+  [driverSel, p1Sel, p2Sel].forEach(sel => {
+    Array.from(sel.options).forEach(opt => {
+      opt.disabled = false;
+      if (!opt.value) return;
+      if (sel !== driverSel && opt.value === driver) opt.disabled = true;
+      if (sel !== p1Sel    && opt.value === p1 && p1) opt.disabled = true;
+      if (sel !== p2Sel    && opt.value === p2 && p2) opt.disabled = true;
+    });
+  });
+}
+
+[driverSel, p1Sel, p2Sel].forEach(sel => sel.addEventListener("change", updatePeopleDropdown));
+
+// ========== START ==========
+window.onload = () => {
+  loadData();
+  updatePeopleDropdown();
+  startAutoRefresh();
 };
-
 </script>
 </body>
 </html>
