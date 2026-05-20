@@ -17,14 +17,17 @@
   input,select{width:100%;padding:9px 10px;border:1.5px solid #ccc;border-radius:8px;font-family:inherit;font-size:14px;transition:border .2s}
   input:focus,select:focus{outline:none;border-color:#2d6cdf}
 
-  .btn-row{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap}
+  .btn-row{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   button{border:none;border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;padding:10px 18px;font-size:14px;transition:opacity .15s}
   button:hover{opacity:.85}
   .btn-blue{background:#2d6cdf;color:#fff}
   .btn-red{background:#e5533d;color:#fff}
   .btn-green{background:#0a8a2a;color:#fff}
+  .btn-orange{background:#e07b00;color:#fff}
   .btn-purple{background:#7b2cff;color:#fff}
   .btn-gray{background:#555;color:#fff}
+
+  .login-status{font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px;background:#f0f4ff;color:#1a1a2e;border:1.5px solid #c5d5f5}
 
   .dashboard{margin-top:18px;padding:10px 14px;background:#f0f4ff;border-radius:8px;font-weight:600;font-size:14px;color:#1a1a2e}
 
@@ -42,12 +45,25 @@
   .badge.ok{background:#0a8a2a}
   .badge.no{background:#c10000}
 
+  .key-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .key-badge.out{background:#fff0cc;color:#a06000;border:1px solid #d18b00}
+  .key-badge.back{background:#e6f9ec;color:#0a6020;border:1px solid #0a8a2a}
+
   .pagination{margin-top:14px;text-align:center}
   .pagination button{margin:2px;padding:6px 13px;font-size:13px}
 
   .overdue{background:#ffdddd !important}
-
   .spinner{text-align:center;padding:20px;color:#888;font-size:14px}
+
+  /* Modal สำหรับแก้ไข Keyman */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:24px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal h3{margin-bottom:16px;color:#1a1a2e}
+  .modal-list{list-style:none;margin-bottom:12px}
+  .modal-list li{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee;font-size:14px}
+  .modal-add{display:flex;gap:8px;margin-top:8px}
+  .modal-add input{flex:1}
 </style>
 </head>
 <body>
@@ -64,15 +80,20 @@
     <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
     <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
     <div><label>เวลาจบ</label><input type="time" id="end"></div>
-    <div id="keymanBox" style="display:none"><label>ผู้จ่ายกุญแจ</label><select id="keyman"></select></div>
-    <div id="keystatusBox" style="display:none"><label>สถานะกุญแจ</label><select id="keystatus"><option value="">-</option><option value="เบิก">เบิก</option><option value="คืน">คืน</option></select></div>
   </div>
 
   <div class="btn-row">
     <button class="btn-blue" onclick="saveBooking()">💾 บันทึก</button>
-    <button class="btn-red" onclick="loginAdmin()" id="loginBtn">🔑 Admin Login</button>
-    <button class="btn-purple" onclick="logoutAdmin()" id="logoutBtn" style="display:none">🚪 Logout</button>
+    <!-- Admin -->
+    <button class="btn-red" onclick="loginAdmin()" id="adminLoginBtn">🔑 Admin Login</button>
+    <button class="btn-purple" onclick="logoutAll()" id="adminLogoutBtn" style="display:none">🚪 Logout Admin</button>
     <button class="btn-green" id="exportBtn" style="display:none" onclick="exportCSV()">📥 Export CSV</button>
+    <button class="btn-orange" id="editKeymanBtn" style="display:none" onclick="openKeymanModal()">⚙️ แก้ไข Keyman</button>
+    <!-- Keyman -->
+    <button class="btn-orange" onclick="loginKeyman()" id="keymanLoginBtn">🗝️ Keyman Login</button>
+    <button class="btn-gray" onclick="logoutAll()" id="keymanLogoutBtn" style="display:none">🚪 Logout Keyman</button>
+    <!-- สถานะ login -->
+    <span class="login-status" id="loginStatus" style="display:none"></span>
   </div>
 
   <div class="dashboard" id="dash">กำลังโหลด...</div>
@@ -91,7 +112,7 @@
         <tr>
           <th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th>
           <th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>ผู้จ่ายกุญแจ</th>
-          <th>สถานะกุญแจ</th><th>สถานะ</th><th>อนุมัติโดย</th>
+          <th>สถานะกุญแจ</th><th>สถานะ</th><th>การดำเนินการ</th>
         </tr>
       </thead>
       <tbody id="tb"><tr><td colspan="10" class="spinner">⏳ กำลังโหลดข้อมูล...</td></tr></tbody>
@@ -99,6 +120,20 @@
   </div>
 
   <div class="pagination" id="page"></div>
+</div>
+
+<!-- Modal แก้ไขรายชื่อ Keyman (Admin เท่านั้น) -->
+<div class="modal-overlay" id="keymanModal">
+  <div class="modal">
+    <h3>⚙️ แก้ไขรายชื่อ Keyman</h3>
+    <ul class="modal-list" id="keymanModalList"></ul>
+    <div class="modal-add">
+      <input id="newKeymanName" placeholder="ชื่อ Keyman ใหม่">
+      <button class="btn-green" onclick="addKeyman()">+ เพิ่ม</button>
+    </div>
+    <br>
+    <button class="btn-gray" onclick="closeKeymanModal()" style="width:100%">ปิด</button>
+  </div>
 </div>
 
 <script>
@@ -118,28 +153,28 @@ const people = [
   "เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"
 ];
 
-const keymanList = ["จิรศักดิ์","วัฒนะชาติ","โกเมน","พิชชากร"];
-
 // ========== STATE ==========
-let bookings = [];
-let viewData = [];
-let admin = false;
-let adminName = "";
-let page = 1;
-const perPage = 10;
+let bookings      = [];
+let viewData      = [];
+let admin         = false;
+let keyman        = false;   // เพิ่ม: สถานะ keyman login
+let currentUser   = "";      // ชื่อผู้ login ปัจจุบัน
+let userRole      = "";      // "admin" | "keyman" | ""
+let page          = 1;
+const perPage     = 10;
 let autoRefreshTimer = null;
+
+// รายชื่อ Keyman (แก้ไขได้โดย Admin)
+let keymanNames = ["วัฒนะชาติ", "โกเมน", "พิชชากร"];
 
 // ========== INIT DROPDOWNS ==========
 const carSel       = document.getElementById("car");
 const driverSel    = document.getElementById("driver");
 const p1Sel        = document.getElementById("p1");
 const p2Sel        = document.getElementById("p2");
-const keymanSel    = document.getElementById("keyman");
-const keyStatusSel = document.getElementById("keystatus");
 const fcarSel      = document.getElementById("fcar");
 const fdriverSel   = document.getElementById("fdriver");
 
-// ✅ "ทั้งหมด" ต้องอยู่หัวสุดเสมอ เพื่อให้ default เป็นทั้งหมดตอนเปิดหน้า
 fcarSel.add(new Option("ทั้งหมด", ""));
 fdriverSel.add(new Option("ทั้งหมด", ""));
 
@@ -155,10 +190,7 @@ people.forEach(p => {
   [p1Sel, p2Sel].forEach(s => s.add(new Option(p, p)));
 });
 
-keymanList.forEach(n => keymanSel.add(new Option(n, n)));
-
-// ========== DATE (Bangkok timezone) ==========
-// ✅ แก้ข้อ 3: today ใช้ Bangkok timezone ไม่ใช่ UTC
+// ========== DATE ==========
 const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
 document.getElementById("date").min = today;
 
@@ -166,16 +198,14 @@ document.getElementById("date").min = today;
 function getDateKey(val) {
   if (!val) return "";
   try {
-    const d = new Date(val);
-    return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
+    return new Date(val).toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' });
   } catch(e) { return ""; }
 }
 
 function formatDate(d) {
   if (!d) return "-";
   try {
-    const dt = new Date(d);
-    const parts = dt.toLocaleDateString('en-GB', { timeZone: 'Asia/Bangkok' }).split('/');
+    const parts = new Date(d).toLocaleDateString('en-GB', { timeZone: 'Asia/Bangkok' }).split('/');
     return `${parts[0]}/${parts[1]}/${parts[2]}`;
   } catch(e) { return "-"; }
 }
@@ -183,38 +213,28 @@ function formatDate(d) {
 function formatTime(t) {
   if (!t) return "--:--";
   const str = t.toString().trim();
-
-  // กรณี Google Sheet ส่งมาเป็น "1899-12-30T01:47:00.000Z" (timezone bug ของ Sheet)
   if (str.includes("T")) {
     try {
-      // ดึงเฉพาะเวลา HH:MM จาก ISO string โดยตรง (ไม่แปลง timezone เพราะ Sheet เก็บผิด base date)
-      const timePart = str.split("T")[1];          // "01:47:00.000Z"
-      const hh = timePart.substring(0, 2);
-      const mm = timePart.substring(3, 5);
-      // บวก 7 ชั่วโมง (UTC → Bangkok)
-      const totalMin = parseInt(hh) * 60 + parseInt(mm) + 7 * 60;
-      const realHH = String(Math.floor(totalMin / 60) % 24).padStart(2, '0');
-      const realMM = String(totalMin % 60).padStart(2, '0');
-      return realHH + ":" + realMM;
+      const timePart = str.split("T")[1];
+      const hh = parseInt(timePart.substring(0, 2));
+      const mm = parseInt(timePart.substring(3, 5));
+      const totalMin = hh * 60 + mm + 7 * 60;
+      return String(Math.floor(totalMin / 60) % 24).padStart(2,'0') + ":" + String(totalMin % 60).padStart(2,'0');
     } catch(e) { return "--:--"; }
   }
-
-  // กรณีส่งมาเป็น "08:30" ปกติ
   if (str.includes(":")) {
     const sp = str.split(":");
-    return sp[0].padStart(2, '0') + ":" + sp[1].substring(0, 2);
+    return sp[0].padStart(2,'0') + ":" + sp[1].substring(0,2);
   }
-
   return "--:--";
 }
 
 function isOverdue(b) {
   try {
-    if (!b.keystatus || b.keystatus === "คืน") return false;
+    if (!b.keystatus || b.keystatus === "คืนแล้ว") return false;
     const endTime = formatTime(b.end);
     if (endTime === "--:--") return false;
-    const endDt = new Date(getDateKey(b.date) + "T" + endTime + ":00");
-    return new Date() > endDt;
+    return new Date() > new Date(getDateKey(b.date) + "T" + endTime + ":00");
   } catch(e) { return false; }
 }
 
@@ -222,19 +242,16 @@ function isOverdue(b) {
 async function loadData() {
   try {
     const res = await fetch(API + "?ts=" + Date.now());
-    const txt = await res.text();
-    bookings = JSON.parse(txt);
+    bookings = JSON.parse(await res.text());
     bookings.sort((a, b) => Number(b.id) - Number(a.id));
   } catch(e) {
     document.getElementById("tb").innerHTML = '<tr><td colspan="10" style="color:red">⚠️ โหลดข้อมูลไม่ได้ กรุณา refresh</td></tr>';
     return;
   }
-  // คงสภาพ filter ปัจจุบัน
   filterData(false);
   renderDash();
 }
 
-// ✅ แก้ข้อ 4: refresh ทุก 20 วินาที (จากเดิม 3 วินาที)
 function startAutoRefresh() {
   if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   autoRefreshTimer = setInterval(loadData, 20000);
@@ -257,7 +274,7 @@ function renderDash() {
 // ========== RENDER TABLE ==========
 function render() {
   const start = (page - 1) * perPage;
-  const data = viewData.slice(start, start + perPage);
+  const data  = viewData.slice(start, start + perPage);
   let html = "";
 
   if (data.length === 0) {
@@ -265,33 +282,55 @@ function render() {
   }
 
   data.forEach(b => {
+    // สถานะการเบิก
     let badge = "<span class='badge wait'>รออนุมัติ</span>";
     if (b.status === "อนุมัติ")    badge = "<span class='badge ok'>อนุมัติ</span>";
     if (b.status === "ไม่อนุมัติ") badge = "<span class='badge no'>ไม่อนุมัติ</span>";
 
+    // สถานะกุญแจ — แสดง badge พร้อมปุ่มเปลี่ยนสถานะถ้าเป็น Admin/Keyman
+    const ks = b.keystatus || "";
+    let keyBadge = "-";
+    if (ks === "ยังไม่คืน") keyBadge = "<span class='key-badge out'>🔑 ยังไม่คืน</span>";
+    if (ks === "คืนแล้ว")   keyBadge = "<span class='key-badge back'>✅ คืนแล้ว</span>";
+
+    let keyCell = keyBadge;
+    // Admin หรือ Keyman สามารถเปลี่ยนสถานะกุญแจได้
+    if ((admin || keyman) && b.status === "อนุมัติ") {
+      if (ks !== "คืนแล้ว") {
+        keyCell += ` <button class="btn-orange" style="padding:3px 8px;font-size:11px;margin-top:2px" onclick="setKeyStatus('${b.id}','ยังไม่คืน','${currentUser}')">🔑 เบิก</button>
+                     <button class="btn-green"  style="padding:3px 8px;font-size:11px;margin-top:2px" onclick="setKeyStatus('${b.id}','คืนแล้ว','${currentUser}')">✅ คืน</button>`;
+      } else {
+        keyCell += ` <button class="btn-orange" style="padding:3px 8px;font-size:11px;margin-top:2px" onclick="setKeyStatus('${b.id}','ยังไม่คืน','${currentUser}')">↩ เบิกคืน</button>`;
+      }
+    }
+
+    // ผู้จ่ายกุญแจ
+    const keymanCell = b.keyman || "-";
+
+    // คอลัมน์ Action (อนุมัติ/ลบ — Admin เท่านั้น)
     let actionCell = b.approved || b.approvedby
       ? `<span style='color:#0a8a2a;font-weight:bold'>${b.approved || b.approvedby}</span>`
       : "-";
 
     if (admin) {
       if (b.status === "รออนุมัติ") {
-        const alreadyApproved = bookings.find(x =>
+        const dup = bookings.find(x =>
           getDateKey(x.date) === getDateKey(b.date) && x.car === b.car && x.status === "อนุมัติ"
         );
-        if (alreadyApproved) {
+        if (dup) {
           actionCell = "<span style='color:#c10000'>❌ มีคันนี้อนุมัติแล้ว</span>";
         } else {
           actionCell = `
             <button class="btn-green" onclick="approve('${b.id}')">✔ อนุมัติ</button>
-            <button class="btn-red" onclick="deny('${b.id}')">✖ ไม่อนุมัติ</button>
-            <button class="btn-gray" onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
+            <button class="btn-red"   onclick="deny('${b.id}')">✖ ไม่อนุมัติ</button>
+            <button class="btn-gray"  onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
         }
       } else {
         actionCell = `<button class="btn-gray" onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
       }
     }
 
-    const companions = [b.p1, b.p2].filter(x => x && x !== "").join(", ") || "ไม่มี";
+    const companions  = [b.p1, b.p2].filter(x => x && x !== "").join(", ") || "ไม่มี";
     const overdueClass = isOverdue(b) ? " class='overdue'" : "";
 
     html += `<tr>
@@ -301,8 +340,8 @@ function render() {
       <td>${b.driver || "-"}</td>
       <td>${companions}</td>
       <td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
-      <td>${b.keyman || "-"}</td>
-      <td${overdueClass}>${b.keystatus || "-"}</td>
+      <td>${keymanCell}</td>
+      <td${overdueClass}>${keyCell}</td>
       <td>${badge}</td>
       <td>${actionCell}</td>
     </tr>`;
@@ -317,24 +356,17 @@ function renderPagination() {
   const total = Math.ceil(viewData.length / perPage);
   if (total <= 1) { document.getElementById("page").innerHTML = ""; return; }
 
-  let html = `<button class="btn-gray" onclick="prevPage()">◀</button> `;
-
-  // แสดงเฉพาะ 5 หน้ารอบๆ หน้าปัจจุบัน
   let startP = Math.max(1, page - 2);
   let endP   = Math.min(total, startP + 4);
   if (endP - startP < 4) startP = Math.max(1, endP - 4);
 
-  if (startP > 1) {
-    html += `<button onclick="goPage(1)">1</button><span style="padding:0 6px;line-height:34px">…</span>`;
-  }
+  let html = `<button class="btn-gray" onclick="prevPage()">◀</button> `;
+  if (startP > 1) html += `<button onclick="goPage(1)">1</button><span style="padding:0 6px">…</span>`;
   for (let i = startP; i <= endP; i++) {
     const active = i === page ? 'style="background:#0a8a2a;color:#fff"' : '';
     html += `<button ${active} onclick="goPage(${i})">${i}</button> `;
   }
-  if (endP < total) {
-    html += `<span style="padding:0 6px;line-height:34px">…</span><button onclick="goPage(${total})">${total}</button>`;
-  }
-
+  if (endP < total) html += `<span style="padding:0 6px">…</span><button onclick="goPage(${total})">${total}</button>`;
   html += ` <button class="btn-gray" onclick="nextPage()">▶</button>`;
   document.getElementById("page").innerHTML = html;
 }
@@ -348,11 +380,11 @@ function filterData(resetPage = true) {
   const fc  = fcarSel.value;
   const fd  = fdriverSel.value;
   const fdt = document.getElementById("fdate").value;
-  viewData = bookings.filter(b => {
-    return (!fc || b.car === fc) &&
-           (!fd || b.driver === fd) &&
-           (!fdt || getDateKey(b.date) === fdt);
-  });
+  viewData = bookings.filter(b =>
+    (!fc  || b.car    === fc)  &&
+    (!fd  || b.driver === fd)  &&
+    (!fdt || getDateKey(b.date) === fdt)
+  );
   if (resetPage) page = 1;
   if (page > Math.ceil(viewData.length / perPage)) page = 1;
   render();
@@ -365,43 +397,119 @@ function clearFilter() {
   filterData();
 }
 
-// ========== ADMIN LOGIN / LOGOUT ==========
-// ✅ แก้ข้อ 1: ส่ง password ไป verify ที่ Apps Script แทนเขียนใน code
+// ========== LOGIN / LOGOUT ==========
 async function loginAdmin() {
   const p = prompt("กรอกรหัส Admin:");
   if (!p) return;
   try {
-    const res = await fetch(`${API}?action=login&pwd=${encodeURIComponent(p)}&ts=${Date.now()}`);
+    const res  = await fetch(`${API}?action=login&pwd=${encodeURIComponent(p)}&ts=${Date.now()}`);
     const data = await res.json();
     if (data.ok) {
-      admin = true;
-      adminName = data.name;
-      document.getElementById("loginBtn").style.display   = "none";
-      document.getElementById("logoutBtn").style.display  = "inline-block";
-      document.getElementById("exportBtn").style.display  = "inline-block";
-      document.getElementById("keymanBox").style.display  = "block";
-      document.getElementById("keystatusBox").style.display = "block";
+      admin       = true;
+      keyman      = false;
+      currentUser = data.name;
+      userRole    = "admin";
+      updateLoginUI();
       render();
     } else {
       alert("❌ รหัสผิด กรุณาลองใหม่");
     }
-  } catch(e) {
-    alert("⚠️ เชื่อมต่อ server ไม่ได้");
-  }
+  } catch(e) { alert("⚠️ เชื่อมต่อ server ไม่ได้"); }
 }
 
-function logoutAdmin() {
-  admin = false; adminName = "";
-  document.getElementById("loginBtn").style.display   = "inline-block";
-  document.getElementById("logoutBtn").style.display  = "none";
-  document.getElementById("exportBtn").style.display  = "none";
-  document.getElementById("keymanBox").style.display  = "none";
-  document.getElementById("keystatusBox").style.display = "none";
+async function loginKeyman() {
+  const p = prompt("กรอกรหัส Keyman:");
+  if (!p) return;
+  try {
+    const res  = await fetch(`${API}?action=loginKeyman&pwd=${encodeURIComponent(p)}&ts=${Date.now()}`);
+    const data = await res.json();
+    if (data.ok) {
+      keyman      = true;
+      admin       = false;
+      currentUser = data.name;
+      userRole    = "keyman";
+      updateLoginUI();
+      render();
+    } else {
+      alert("❌ รหัสผิด กรุณาลองใหม่");
+    }
+  } catch(e) { alert("⚠️ เชื่อมต่อ server ไม่ได้"); }
+}
+
+function logoutAll() {
+  admin = false; keyman = false;
+  currentUser = ""; userRole = "";
+  updateLoginUI();
   render();
 }
 
+function updateLoginUI() {
+  const isLoggedIn = admin || keyman;
+
+  document.getElementById("adminLoginBtn").style.display  = admin  ? "none" : "inline-block";
+  document.getElementById("adminLogoutBtn").style.display = admin  ? "inline-block" : "none";
+  document.getElementById("keymanLoginBtn").style.display = keyman ? "none" : "inline-block";
+  document.getElementById("keymanLogoutBtn").style.display= keyman ? "inline-block" : "none";
+  document.getElementById("exportBtn").style.display      = admin  ? "inline-block" : "none";
+  document.getElementById("editKeymanBtn").style.display  = admin  ? "inline-block" : "none";
+
+  const statusEl = document.getElementById("loginStatus");
+  if (isLoggedIn) {
+    const icon = admin ? "👤 Admin" : "🗝️ Keyman";
+    statusEl.textContent = `${icon}: ${currentUser}`;
+    statusEl.style.display = "inline-block";
+  } else {
+    statusEl.style.display = "none";
+  }
+}
+
+// ========== KEY STATUS ==========
+async function setKeyStatus(id, status, byUser) {
+  try {
+    await fetch(`${API}?action=updateKeyStatus&id=${id}&keystatus=${encodeURIComponent(status)}&keyman=${encodeURIComponent(byUser)}`);
+    await loadData();
+  } catch(e) { alert("⚠️ อัปเดตสถานะกุญแจไม่สำเร็จ"); }
+}
+
+// ========== KEYMAN MODAL (Admin) ==========
+function openKeymanModal() {
+  renderKeymanModal();
+  document.getElementById("keymanModal").classList.add("show");
+}
+
+function closeKeymanModal() {
+  document.getElementById("keymanModal").classList.remove("show");
+}
+
+function renderKeymanModal() {
+  const list = document.getElementById("keymanModalList");
+  list.innerHTML = keymanNames.map((n, i) =>
+    `<li><span>${n}</span><button class="btn-red" style="padding:3px 10px;font-size:12px" onclick="removeKeyman(${i})">ลบ</button></li>`
+  ).join("");
+}
+
+function addKeyman() {
+  const input = document.getElementById("newKeymanName");
+  const name  = input.value.trim();
+  if (!name) return alert("⚠️ กรุณากรอกชื่อ");
+  if (keymanNames.includes(name)) return alert("⚠️ มีชื่อนี้แล้ว");
+  keymanNames.push(name);
+  input.value = "";
+  renderKeymanModal();
+}
+
+function removeKeyman(i) {
+  if (!confirm(`ลบ "${keymanNames[i]}" ออกจาก Keyman?`)) return;
+  keymanNames.splice(i, 1);
+  renderKeymanModal();
+}
+
+// ปิด modal เมื่อคลิก overlay
+document.getElementById("keymanModal").addEventListener("click", function(e) {
+  if (e.target === this) closeKeymanModal();
+});
+
 // ========== SAVE BOOKING ==========
-// ✅ แก้ข้อ 2: validate เวลา + ข้อ 5: try/catch + ข้อ 6: URLSearchParams (encode อัตโนมัติ)
 async function saveBooking() {
   const d        = document.getElementById("date").value;
   const startVal = document.getElementById("start").value;
@@ -410,7 +518,6 @@ async function saveBooking() {
   const p1       = p1Sel.value;
   const p2       = p2Sel.value;
 
-  // Validate
   if (!d)          return alert("⚠️ กรุณาเลือกวันที่");
   if (d < today)   return alert("⚠️ ห้ามเลือกวันย้อนหลัง");
   if (!driver)     return alert("⚠️ กรุณาเลือกผู้ขับ");
@@ -420,39 +527,29 @@ async function saveBooking() {
   if ((p1 && p1 === driver) || (p2 && p2 === driver)) return alert("⚠️ ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
   if (p1 && p2 && p1 === p2) return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
 
-  const isReturn = keyStatusSel.value === "คืน";
-  const returnTs = isReturn ? new Date().toISOString() : "";
+  // ตรวจช่วงเวลารถซ้อนกัน
+  const selectedCar = carSel.value;
+  const conflict = bookings.find(b => {
+    if (b.car !== selectedCar || getDateKey(b.date) !== d || b.status !== "อนุมัติ") return false;
+    const bS = formatTime(b.start), bE = formatTime(b.end);
+    if (bS === "--:--" || bE === "--:--") return false;
+    return startVal.substring(0,5) < bE && endVal.substring(0,5) > bS;
+  });
+  if (conflict) return alert(`⚠️ รถ "${selectedCar}" ถูกใช้ช่วง ${formatTime(conflict.start)} - ${formatTime(conflict.end)} แล้ว\nกรุณาเลือกช่วงเวลาอื่น`);
 
-  // ✅ ข้อ 6: URLSearchParams จัดการ encode ให้อัตโนมัติ ไม่พัง แม้มีช่องว่างหรืออักขระพิเศษ
   const params = new URLSearchParams({
-    action:    "save",
-    id:        Date.now().toString(),
-    date:      d,
-    car:       carSel.value,
-    project:   document.getElementById("project").value,
-    driver:    driver,
-    p1:        p1,
-    p2:        p2,
-    start:     startVal,
-    end:       endVal,
-    keyman:    keymanSel.value || "",
-    keystatus: keyStatusSel.value || "",
-    return_ts: returnTs
+    action: "save", id: Date.now().toString(),
+    date: d, car: selectedCar,
+    project: document.getElementById("project").value,
+    driver, p1, p2, start: startVal, end: endVal
   });
 
-  // ✅ ข้อ 5: try/catch ครอบทุก fetch
   try {
     const res = await fetch(`${API}?${params.toString()}`);
     const txt = await res.text();
-    if (txt === "Saved") {
-      await loadData();
-      alert("✅ บันทึกสำเร็จ");
-    } else {
-      alert("⚠️ บันทึกไม่สำเร็จ กรุณาลองใหม่");
-    }
-  } catch(e) {
-    alert("⚠️ เชื่อมต่อ server ไม่ได้ กรุณาลองใหม่");
-  }
+    if (txt === "Saved") { await loadData(); alert("✅ บันทึกสำเร็จ"); }
+    else alert("⚠️ บันทึกไม่สำเร็จ กรุณาลองใหม่");
+  } catch(e) { alert("⚠️ เชื่อมต่อ server ไม่ได้ กรุณาลองใหม่"); }
 }
 
 // ========== APPROVE / DENY / DELETE ==========
@@ -461,48 +558,39 @@ function deny(id)    { updateStatus(id, "ไม่อนุมัติ"); }
 
 async function updateStatus(id, status) {
   try {
-    await fetch(`${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(adminName)}`);
+    await fetch(`${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(currentUser)}`);
     await loadData();
-  } catch(e) {
-    alert("⚠️ อัปเดตสถานะไม่สำเร็จ");
-  }
+  } catch(e) { alert("⚠️ อัปเดตสถานะไม่สำเร็จ"); }
 }
 
 async function deleteRow(id) {
-  if (!admin) return alert("เฉพาะ Admin เท่านั้น");
+  if (!admin) return;
   if (!confirm("ต้องการลบรายการนี้ใช่ไหม?")) return;
   try {
     await fetch(`${API}?action=delete&id=${id}&ts=${Date.now()}`);
     await loadData();
-  } catch(e) {
-    alert("⚠️ ลบไม่สำเร็จ");
-  }
+  } catch(e) { alert("⚠️ ลบไม่สำเร็จ"); }
 }
 
 // ========== EXPORT CSV ==========
-// ✅ เพิ่ม BOM (\uFEFF) แก้ Excel เปิดแล้วภาษาไทยแตก
 function exportCSV() {
-  let csv = "\uFEFF" + "วันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วม1,ผู้ร่วม2,เวลาเริ่ม,เวลาจบ,สถานะ,อนุมัติโดย\n";
+  let csv = "\uFEFF" + "วันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วม1,ผู้ร่วม2,เวลาเริ่ม,เวลาจบ,สถานะ,อนุมัติโดย,ผู้จ่ายกุญแจ,สถานะกุญแจ\n";
   bookings.forEach(b => {
     csv += [
       formatDate(b.date), b.car, b.project, b.driver,
-      b.p1 || "", b.p2 || "",
-      formatTime(b.start), formatTime(b.end),
-      b.status, b.approved || b.approvedby || ""
+      b.p1||"", b.p2||"", formatTime(b.start), formatTime(b.end),
+      b.status, b.approved||b.approvedby||"", b.keyman||"", b.keystatus||""
     ].join(",") + "\n";
   });
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
   a.download = "fleet_" + today + ".csv";
   a.click();
 }
 
 // ========== PREVENT DUPLICATE SELECTION ==========
 function updatePeopleDropdown() {
-  const driver = driverSel.value;
-  const p1 = p1Sel.value;
-  const p2 = p2Sel.value;
+  const driver = driverSel.value, p1 = p1Sel.value, p2 = p2Sel.value;
   [driverSel, p1Sel, p2Sel].forEach(sel => {
     Array.from(sel.options).forEach(opt => {
       opt.disabled = false;
@@ -513,15 +601,10 @@ function updatePeopleDropdown() {
     });
   });
 }
-
 [driverSel, p1Sel, p2Sel].forEach(sel => sel.addEventListener("change", updatePeopleDropdown));
 
 // ========== START ==========
-window.onload = () => {
-  loadData();
-  updatePeopleDropdown();
-  startAutoRefresh();
-};
+window.onload = () => { loadData(); updatePeopleDropdown(); startAutoRefresh(); };
 </script>
 </body>
 </html>
