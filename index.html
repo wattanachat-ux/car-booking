@@ -1,115 +1,505 @@
-// ============================================================
-//  code.gs — Guts IOC Car Booking Backend
-// ============================================================
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="เบิกรถ IOC">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>เอกสารเบิกรถ Guts IOC</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',Arial,sans-serif;background:#eef2f7;padding:16px;font-size:15px}
+  .card{background:#fff;padding:20px;border-radius:14px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+  h2{margin-bottom:20px;color:#1a1a2e;font-size:20px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .grid label{display:block;font-size:12px;color:#555;margin-bottom:4px;font-weight:600}
+  input,select{width:100%;padding:9px 10px;border:1.5px solid #ccc;border-radius:8px;font-family:inherit;font-size:14px;background:#fff}
+  input:focus,select:focus{outline:none;border-color:#2d6cdf}
+  .btn-row{margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{border:none;border-radius:8px;font-family:inherit;font-weight:700;cursor:pointer;padding:10px 16px;font-size:14px}
+  button:active{opacity:.75}
+  .btn-blue{background:#2d6cdf;color:#fff}
+  .btn-red{background:#e5533d;color:#fff}
+  .btn-green{background:#0a8a2a;color:#fff}
+  .btn-orange{background:#e07b00;color:#fff}
+  .btn-purple{background:#7b2cff;color:#fff}
+  .btn-gray{background:#555;color:#fff}
+  .login-status{font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px;background:#f0f4ff;color:#1a1a2e;border:1.5px solid #c5d5f5}
+  .dashboard{margin-top:16px;padding:10px 14px;background:#f0f4ff;border-radius:8px;font-weight:600;font-size:14px;color:#1a1a2e}
+  .filter{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .filter select,.filter input{width:auto;min-width:130px}
+  .table-wrap{overflow-x:auto;margin-top:18px}
+  table{width:100%;border-collapse:collapse;min-width:900px}
+  th,td{border:1px solid #ddd;padding:8px 10px;text-align:center;font-size:13px}
+  th{background:#1a1a2e;color:#fff;font-weight:600}
+  tr:nth-child(even){background:#f8f9fc}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;color:#fff;font-size:12px;font-weight:600}
+  .badge.wait{background:#d18b00}.badge.ok{background:#0a8a2a}.badge.no{background:#c10000}
+  .key-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+  .key-badge.out{background:#fff0cc;color:#a06000;border:1px solid #d18b00}
+  .key-badge.back{background:#e6f9ec;color:#0a6020;border:1px solid #0a8a2a}
+  .pagination{margin-top:14px;text-align:center}
+  .pagination button{margin:2px;padding:6px 13px;font-size:13px}
+  .overdue{background:#ffdddd !important}
+  .spinner{text-align:center;padding:20px;color:#888}
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;white-space:nowrap}
+  #toast.show{opacity:1}
+  #syncBar{position:fixed;top:0;left:0;right:0;height:3px;background:#2d6cdf;transform:scaleX(0);transform-origin:left;transition:transform .4s;z-index:9999}
+  #syncBar.active{transform:scaleX(1)}
+  #offlineBanner{display:none;background:#c10000;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:600;border-radius:8px;margin-bottom:10px}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:#fff;border-radius:14px;padding:24px;width:380px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  .modal h3{margin-bottom:16px;color:#1a1a2e}
+  .modal-list{list-style:none;margin-bottom:12px}
+  .modal-list li{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #eee;font-size:14px}
+  .modal-add{display:flex;gap:8px;margin-top:8px}
+  .modal-add input{flex:1}
+  /* install banner PWA */
+  #installBanner{display:none;background:#1a1a2e;color:#fff;padding:10px 16px;border-radius:10px;margin-bottom:12px;display:none;align-items:center;gap:10px;font-size:14px}
+  #installBanner button{background:#2d6cdf;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:13px}
+  @media(max-width:700px){
+    .grid{grid-template-columns:1fr 1fr}
+    .btn-row{gap:6px}
+    button{padding:9px 12px;font-size:13px}
+    .filter{flex-direction:column;align-items:stretch}
+    .filter select,.filter input{width:100%;min-width:unset}
+  }
+</style>
+</head>
+<body>
+<div id="syncBar"></div>
+<div id="offlineBanner">📵 ออฟไลน์ — แสดงข้อมูลล่าสุดจาก cache</div>
+<div id="toast"></div>
 
-const SPREADSHEET_ID = "1r770uF-s89a4hBtMc99ak3DnnMwvSAmEo8G5uaF_OWQ";
-const SHEET_NAME = "Sheet1";
+<div class="card">
+  <!-- PWA install banner -->
+  <div id="installBanner">
+    📱 ติดตั้งเป็น App เพื่อประสบการณ์ที่ดีกว่า
+    <button onclick="installPWA()">ติดตั้ง</button>
+    <button onclick="document.getElementById('installBanner').style.display='none'" style="background:#555">ปิด</button>
+  </div>
 
-const ADMIN_PASSWORDS = {
-  "11223344": "จิรศักดิ์",
-  "12121212": "จุติมา"
-};
+  <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
 
-const KEYMAN_PASSWORDS = {
-  "33334444": "วัฒนะชาติ",
-  "55556666": "โกเมน",
-  "77778888": "พิชชากร"
-};
+  <div class="grid">
+    <div><label>วันที่</label><input type="date" id="date" onchange="renderDash()"></div>
+    <div><label>ทะเบียนรถ</label><select id="car"></select></div>
+    <div><label>โครงการ</label><input id="project" placeholder="ชื่อโครงการ" autocomplete="off"></div>
+    <div><label>ผู้ขับ</label><select id="driver"></select></div>
+    <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
+    <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+    <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
+    <div><label>เวลาจบ</label><input type="time" id="end"></div>
+  </div>
 
-// ============================================================
-function doGet(e) {
-  const action = e.parameter.action;
-  const ss     = SpreadsheetApp.openById(SPREADSHEET_ID);
-  const sheet  = ss.getSheetByName(SHEET_NAME);
+  <div class="btn-row">
+    <button class="btn-blue"   onclick="saveBooking()">💾 บันทึก</button>
+    <button class="btn-red"    onclick="loginAdmin()"  id="adminLoginBtn">🔑 Admin Login</button>
+    <button class="btn-purple" onclick="logoutAll()"   id="adminLogoutBtn" style="display:none">🚪 Logout Admin</button>
+    <button class="btn-green"  id="exportBtn"          style="display:none" onclick="exportCSV()">📥 Export CSV</button>
+    <button class="btn-orange" id="editKeymanBtn"      style="display:none" onclick="openKeymanModal()">⚙️ Keyman</button>
+    <button class="btn-orange" onclick="loginKeyman()" id="keymanLoginBtn">🗝️ Keyman Login</button>
+    <button class="btn-gray"   onclick="logoutAll()"   id="keymanLogoutBtn" style="display:none">🚪 Logout</button>
+    <span class="login-status" id="loginStatus" style="display:none"></span>
+    <button class="btn-gray"   onclick="forceRefresh()" style="padding:10px 14px" title="รีเฟรช">🔄</button>
+  </div>
 
-  if (!action)                      return getAll(sheet);
-  if (action === "login")           return loginCheck(e, ADMIN_PASSWORDS);
-  if (action === "loginKeyman")     return loginCheck(e, KEYMAN_PASSWORDS);
-  if (action === "save")            return saveBooking(e, sheet);
-  if (action === "updateStatus")    return updateStatus(e, sheet);
-  if (action === "updateKeyStatus") return updateKeyStatus(e, sheet);
-  if (action === "delete")          return deleteRow(e, sheet);
+  <div class="dashboard" id="dash">กำลังโหลด...</div>
 
-  return ContentService.createTextOutput("Unknown action");
+  <div class="filter">
+    <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองรถ</label><select id="fcar"></select></div>
+    <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองผู้ขับ</label><select id="fdriver"></select></div>
+    <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองวันที่</label><input type="date" id="fdate"></div>
+    <button class="btn-blue" onclick="filterData()">🔍 Filter</button>
+    <button class="btn-gray" onclick="clearFilter()">✖ ล้าง</button>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>วันที่</th><th>รถ</th><th>โครงการ</th><th>ผู้ขับ</th>
+        <th>ผู้ร่วมเดินทาง</th><th>เวลา</th><th>ผู้จ่ายกุญแจ</th>
+        <th>สถานะกุญแจ</th><th>สถานะ</th><th>การดำเนินการ</th>
+      </tr></thead>
+      <tbody id="tb"><tr><td colspan="10" class="spinner">⏳ กำลังโหลดข้อมูล...</td></tr></tbody>
+    </table>
+  </div>
+  <div class="pagination" id="page"></div>
+</div>
+
+<div class="modal-overlay" id="keymanModal">
+  <div class="modal">
+    <h3>⚙️ แก้ไขรายชื่อ Keyman</h3>
+    <ul class="modal-list" id="keymanModalList"></ul>
+    <div class="modal-add">
+      <input id="newKeymanName" placeholder="ชื่อ Keyman ใหม่">
+      <button class="btn-green" onclick="addKeyman()">+ เพิ่ม</button>
+    </div>
+    <br>
+    <button class="btn-gray" onclick="closeKeymanModal()" style="width:100%">ปิด</button>
+  </div>
+</div>
+
+<script>
+// ========== CONFIG ==========
+const API      = "https://script.google.com/macros/s/AKfycbwgckQR2Ty2mZAOdi8ExG2ZWCdQyPVhhMjvjwsSt8M9ishFmMFVFWjkzuvnWfq4gj48tw/exec";
+const CACHE_KEY = "ioc_bookings_v2";
+
+const cars   = ["toyota yaris 6กญ1240","toyota yaris 6กฌ9085","toyota revo 1ฒภ6727","toyota revo 2ฒข4846"];
+const people = ["จิรศักดิ์","จุติมา","วัฒนะชาติ","โกเมน","อานนท์","รด","พิชชากร","ปฏิภาณ","ชุติเดช","สรวิศ.ก","สรวิศ.พ","ภูวดล","กฤษพล","ชยุต","เอมมิกา","ชัชโภคิณ","ณัฐพล","พัชรวรรณ"];
+
+// ========== STATE ==========
+let bookings=[],viewData=[];
+let admin=false,keyman=false,currentUser="",userRole="";
+let page=1; const perPage=10;
+let autoRefreshTimer=null;
+let keymanNames=["วัฒนะชาติ","โกเมน","พิชชากร"];
+let isOnline=navigator.onLine;
+let deferredInstallPrompt=null;
+
+// ========== DROPDOWNS ==========
+const carSel=document.getElementById("car");
+const driverSel=document.getElementById("driver");
+const p1Sel=document.getElementById("p1");
+const p2Sel=document.getElementById("p2");
+const fcarSel=document.getElementById("fcar");
+const fdriverSel=document.getElementById("fdriver");
+
+fcarSel.add(new Option("ทั้งหมด",""));
+fdriverSel.add(new Option("ทั้งหมด",""));
+cars.forEach(c=>{carSel.add(new Option(c,c));fcarSel.add(new Option(c,c));});
+[p1Sel,p2Sel].forEach(s=>s.add(new Option("-- ไม่มี --","")));
+people.forEach(p=>{
+  driverSel.add(new Option(p,p));fdriverSel.add(new Option(p,p));
+  [p1Sel,p2Sel].forEach(s=>s.add(new Option(p,p)));
+});
+
+// วันที่ปัจจุบัน Bangkok
+const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});
+document.getElementById("date").min=today;
+document.getElementById("date").value=today;
+
+// ========== PWA ==========
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault(); deferredInstallPrompt=e;
+  document.getElementById("installBanner").style.display="flex";
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById("installBanner").style.display="none";
+  toast("✅ ติดตั้ง App สำเร็จ!");
+});
+function installPWA(){
+  if(!deferredInstallPrompt)return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(()=>{deferredInstallPrompt=null;});
 }
 
-// ── โหลดข้อมูล ✅ แปลงเวลาเป็น "HH:MM" string ก่อนส่ง แก้ปัญหาเวลาผิด ──
-function getAll(sheet) {
-  const data    = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => h.toString().toLowerCase().trim());
-  const json    = data.slice(1).map(row => {
-    let obj = {};
-    headers.forEach((h, i) => {
-      let val = row[i];
-      // ถ้า header เป็น start หรือ end และค่าเป็น Date object → แปลงเป็น "HH:MM"
-      if ((h === "start" || h === "end") && val instanceof Date) {
-        const hh = String(val.getHours()).padStart(2, '0');
-        const mm = String(val.getMinutes()).padStart(2, '0');
-        val = hh + ":" + mm;
-      }
-      obj[h] = val;
-    });
-    return obj;
+// ========== TOAST / SYNC ==========
+function toast(msg,dur=2500){
+  const el=document.getElementById("toast");
+  el.textContent=msg;el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),dur);
+}
+function syncStart(){document.getElementById("syncBar").classList.add("active")}
+function syncEnd(){document.getElementById("syncBar").classList.remove("active")}
+
+// ========== OFFLINE ==========
+window.addEventListener("online",()=>{isOnline=true;document.getElementById("offlineBanner").style.display="none";loadData();});
+window.addEventListener("offline",()=>{isOnline=false;document.getElementById("offlineBanner").style.display="block";toast("📵 ออฟไลน์");});
+
+// ========== CACHE ==========
+function saveCache(d){try{sessionStorage.setItem(CACHE_KEY,JSON.stringify(d));}catch(e){}}
+function loadCache(){try{const d=sessionStorage.getItem(CACHE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}}
+
+// ========== HELPERS ==========
+function getDateKey(val){
+  if(!val)return"";
+  try{return new Date(val).toLocaleDateString('en-CA',{timeZone:'Asia/Bangkok'});}catch(e){return"";}
+}
+function formatDate(d){
+  if(!d)return"-";
+  try{const p=new Date(d).toLocaleDateString('en-GB',{timeZone:'Asia/Bangkok'}).split('/');return`${p[0]}/${p[1]}/${p[2]}`;}catch(e){return"-";}
+}
+// ✅ แก้เวลา: Apps Script ส่งมาเป็น "HH:MM" string แล้ว ไม่ต้องแปลง timezone
+function formatTime(t){
+  if(!t)return"--:--";
+  const str=t.toString().trim();
+  // รับแบบ "HH:MM" ปกติ (Apps Script แปลงให้แล้ว)
+  if(/^\d{1,2}:\d{2}/.test(str)){
+    const sp=str.split(":");
+    return sp[0].padStart(2,'0')+":"+sp[1].substring(0,2);
+  }
+  // fallback กรณี Sheet ยังส่ง ISO string
+  if(str.includes("T")){
+    try{
+      const tp=str.split("T")[1];
+      const hh=parseInt(tp.substring(0,2)),mm=parseInt(tp.substring(3,5));
+      const tot=hh*60+mm+7*60;
+      return String(Math.floor(tot/60)%24).padStart(2,'0')+":"+String(tot%60).padStart(2,'0');
+    }catch(e){return"--:--";}
+  }
+  return"--:--";
+}
+function isOverdue(b){
+  try{
+    if(!b.keystatus||b.keystatus==="คืนแล้ว")return false;
+    const et=formatTime(b.end);if(et==="--:--")return false;
+    return new Date()>new Date(getDateKey(b.date)+"T"+et+":00");
+  }catch(e){return false;}
+}
+
+// ========== LOAD DATA (cache-first) ==========
+async function loadData(showSpinner=false){
+  const cached=loadCache();
+  if(cached&&cached.length>0){
+    bookings=cached;bookings.sort((a,b)=>Number(b.id)-Number(a.id));
+    filterData(false);renderDash();
+  }else if(showSpinner){
+    document.getElementById("tb").innerHTML='<tr><td colspan="10" class="spinner">⏳ กำลังโหลดข้อมูล...</td></tr>';
+  }
+  if(!isOnline)return;
+  syncStart();
+  try{
+    const res=await fetch(API+"?ts="+Date.now());
+    const fresh=JSON.parse(await res.text());
+    saveCache(fresh);bookings=fresh;
+    bookings.sort((a,b)=>Number(b.id)-Number(a.id));
+    filterData(false);renderDash();
+  }catch(e){
+    if(!cached)document.getElementById("tb").innerHTML='<tr><td colspan="10" style="color:red">⚠️ โหลดข้อมูลไม่ได้</td></tr>';
+  }finally{syncEnd();}
+}
+function forceRefresh(){sessionStorage.removeItem(CACHE_KEY);toast("🔄 กำลังโหลดใหม่...");loadData(true);}
+function startAutoRefresh(){
+  if(autoRefreshTimer)clearInterval(autoRefreshTimer);
+  autoRefreshTimer=setInterval(()=>loadData(),60000);
+}
+
+// ========== DASHBOARD ==========
+function renderDash(){
+  const d=document.getElementById("date").value;
+  if(!d){document.getElementById("dash").innerHTML="📅 เลือกวันที่เพื่อดูสถานะรถ";return;}
+  let html="📊 สถานะรถ "+formatDate(d+"T00:00:00")+" → ";let found=false;
+  cars.forEach(c=>{
+    if(bookings.find(b=>getDateKey(b.date)===d&&b.car===c&&b.status==="อนุมัติ")){html+=` 🔴 ${c} `;found=true;}
   });
-  return jsonOutput(json);
+  if(!found)html+=" ✅ รถว่างทุกคัน";
+  document.getElementById("dash").innerHTML=html;
 }
 
-function loginCheck(e, passwordMap) {
-  const name = passwordMap[e.parameter.pwd || ""];
-  return jsonOutput(name ? { ok: true, name: name } : { ok: false });
-}
-
-function saveBooking(e, sheet) {
-  const p = e.parameter;
-  sheet.appendRow([
-    p.id || "", p.date || "", p.car || "", p.project || "",
-    p.driver || "", p.p1 || "", p.p2 || "",
-    p.start || "", p.end || "",
-    "รออนุมัติ", "",
-    "", "", ""
-  ]);
-  return ContentService.createTextOutput("Saved");
-}
-
-function updateStatus(e, sheet) {
-  const id   = String(e.parameter.id || "");
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === id) {
-      sheet.getRange(i + 1, 10).setValue(e.parameter.status || "");
-      sheet.getRange(i + 1, 11).setValue(e.parameter.admin  || "");
-      break;
-    }
-  }
-  return ContentService.createTextOutput("Updated");
-}
-
-function updateKeyStatus(e, sheet) {
-  const id   = String(e.parameter.id || "");
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === id) {
-      sheet.getRange(i + 1, 13).setValue(e.parameter.keystatus || "");
-      sheet.getRange(i + 1, 12).setValue(e.parameter.keyman   || "");
-      if (e.parameter.keystatus === "คืนแล้ว") {
-        sheet.getRange(i + 1, 14).setValue(new Date().toISOString());
+// ========== RENDER ==========
+function render(){
+  const start=(page-1)*perPage,data=viewData.slice(start,start+perPage);
+  let html="";
+  if(!data.length)html='<tr><td colspan="10" style="color:#888;padding:20px">ไม่มีข้อมูล</td></tr>';
+  data.forEach(b=>{
+    let badge="<span class='badge wait'>รออนุมัติ</span>";
+    if(b.status==="อนุมัติ")badge="<span class='badge ok'>อนุมัติ</span>";
+    if(b.status==="ไม่อนุมัติ")badge="<span class='badge no'>ไม่อนุมัติ</span>";
+    const ks=b.keystatus||"";
+    let keyBadge="-";
+    if(ks==="ยังไม่คืน")keyBadge="<span class='key-badge out'>🔑 ยังไม่คืน</span>";
+    if(ks==="คืนแล้ว")keyBadge="<span class='key-badge back'>✅ คืนแล้ว</span>";
+    let keyCell=keyBadge;
+    if((admin||keyman)&&b.status==="อนุมัติ"){
+      if(ks!=="คืนแล้ว"){
+        keyCell+=` <button class="btn-orange" style="padding:3px 8px;font-size:11px;margin-top:3px" onclick="setKeyStatus('${b.id}','ยังไม่คืน','${currentUser}')">🔑 เบิก</button>
+                   <button class="btn-green"  style="padding:3px 8px;font-size:11px;margin-top:3px" onclick="setKeyStatus('${b.id}','คืนแล้ว','${currentUser}')">✅ คืน</button>`;
+      }else{
+        keyCell+=` <button class="btn-orange" style="padding:3px 8px;font-size:11px;margin-top:3px" onclick="setKeyStatus('${b.id}','ยังไม่คืน','${currentUser}')">↩ เบิกคืน</button>`;
       }
-      break;
     }
-  }
-  return ContentService.createTextOutput("Updated");
+    let ac=b.approved||b.approvedby?`<span style='color:#0a8a2a;font-weight:bold'>${b.approved||b.approvedby}</span>`:"-";
+    if(admin){
+      if(b.status==="รออนุมัติ"){
+        const dup=bookings.find(x=>getDateKey(x.date)===getDateKey(b.date)&&x.car===b.car&&x.status==="อนุมัติ");
+        ac=dup?"<span style='color:#c10000'>❌ มีคันนี้อนุมัติแล้ว</span>"
+              :`<button class="btn-green" onclick="approve('${b.id}')">✔ อนุมัติ</button>
+                <button class="btn-red"   onclick="deny('${b.id}')">✖ ไม่อนุมัติ</button>
+                <button class="btn-gray"  onclick="deleteRow('${b.id}')">🗑</button>`;
+      }else{
+        ac=`<button class="btn-gray" onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
+      }
+    }
+    const comp=[b.p1,b.p2].filter(x=>x&&x!=="").join(", ")||"ไม่มี";
+    html+=`<tr>
+      <td>${formatDate(b.date)}</td><td>${b.car||"-"}</td><td>${b.project||"-"}</td><td>${b.driver||"-"}</td>
+      <td>${comp}</td><td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
+      <td>${b.keyman||"-"}</td><td${isOverdue(b)?" class='overdue'":""}>${keyCell}</td>
+      <td>${badge}</td><td>${ac}</td>
+    </tr>`;
+  });
+  document.getElementById("tb").innerHTML=html;
+  renderPagination();
 }
 
-function deleteRow(e, sheet) {
-  const id   = String(e.parameter.id || "");
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][0]) === id) { sheet.deleteRow(i + 1); break; }
+// ========== PAGINATION ==========
+function renderPagination(){
+  const total=Math.ceil(viewData.length/perPage);
+  if(total<=1){document.getElementById("page").innerHTML="";return;}
+  let sP=Math.max(1,page-2),eP=Math.min(total,sP+4);
+  if(eP-sP<4)sP=Math.max(1,eP-4);
+  let html=`<button class="btn-gray" onclick="prevPage()">◀</button> `;
+  if(sP>1)html+=`<button onclick="goPage(1)">1</button><span style="padding:0 6px">…</span>`;
+  for(let i=sP;i<=eP;i++){
+    html+=`<button ${i===page?'style="background:#0a8a2a;color:#fff"':''} onclick="goPage(${i})">${i}</button> `;
   }
-  return ContentService.createTextOutput("Deleted");
+  if(eP<total)html+=`<span style="padding:0 6px">…</span><button onclick="goPage(${total})">${total}</button>`;
+  html+=` <button class="btn-gray" onclick="nextPage()">▶</button>`;
+  document.getElementById("page").innerHTML=html;
+}
+function prevPage(){if(page>1){page--;render();}}
+function nextPage(){const t=Math.ceil(viewData.length/perPage);if(page<t){page++;render();}}
+function goPage(p){page=p;render();}
+
+// ========== FILTER ==========
+function filterData(rp=true){
+  const fc=fcarSel.value,fd=fdriverSel.value,fdt=document.getElementById("fdate").value;
+  viewData=bookings.filter(b=>(!fc||b.car===fc)&&(!fd||b.driver===fd)&&(!fdt||getDateKey(b.date)===fdt));
+  if(rp)page=1;
+  if(page>Math.ceil(viewData.length/perPage))page=1;
+  render();
+}
+function clearFilter(){fcarSel.value="";fdriverSel.value="";document.getElementById("fdate").value="";filterData();}
+
+// ========== LOGIN ==========
+async function loginAdmin(){
+  const p=prompt("กรอกรหัส Admin:");if(!p)return;
+  try{
+    const r=await fetch(`${API}?action=login&pwd=${encodeURIComponent(p)}&ts=${Date.now()}`);
+    const d=await r.json();
+    if(d.ok){admin=true;keyman=false;currentUser=d.name;updateLoginUI();render();toast(`✅ Login: ${d.name}`);}
+    else alert("❌ รหัสผิด");
+  }catch(e){alert("⚠️ เชื่อมต่อไม่ได้");}
+}
+async function loginKeyman(){
+  const p=prompt("กรอกรหัส Keyman:");if(!p)return;
+  try{
+    const r=await fetch(`${API}?action=loginKeyman&pwd=${encodeURIComponent(p)}&ts=${Date.now()}`);
+    const d=await r.json();
+    if(d.ok){keyman=true;admin=false;currentUser=d.name;updateLoginUI();render();toast(`✅ Login: ${d.name}`);}
+    else alert("❌ รหัสผิด");
+  }catch(e){alert("⚠️ เชื่อมต่อไม่ได้");}
+}
+function logoutAll(){admin=false;keyman=false;currentUser="";updateLoginUI();render();toast("👋 Logout แล้ว");}
+function updateLoginUI(){
+  const li=admin||keyman;
+  document.getElementById("adminLoginBtn").style.display=admin?"none":"inline-block";
+  document.getElementById("adminLogoutBtn").style.display=admin?"inline-block":"none";
+  document.getElementById("keymanLoginBtn").style.display=keyman?"none":"inline-block";
+  document.getElementById("keymanLogoutBtn").style.display=keyman?"inline-block":"none";
+  document.getElementById("exportBtn").style.display=admin?"inline-block":"none";
+  document.getElementById("editKeymanBtn").style.display=admin?"inline-block":"none";
+  const st=document.getElementById("loginStatus");
+  if(li){st.textContent=(admin?"👤 Admin":"🗝️ Keyman")+": "+currentUser;st.style.display="inline-block";}
+  else st.style.display="none";
 }
 
-function jsonOutput(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj))
-    .setMimeType(ContentService.MimeType.JSON);
+// ========== KEY STATUS ==========
+async function setKeyStatus(id,status,by){
+  const b=bookings.find(x=>String(x.id)===String(id));
+  if(b){b.keystatus=status;b.keyman=by;saveCache(bookings);filterData(false);}
+  toast(status==="คืนแล้ว"?"✅ คืนกุญแจแล้ว":"🔑 เบิกกุญแจแล้ว");
+  try{await fetch(`${API}?action=updateKeyStatus&id=${id}&keystatus=${encodeURIComponent(status)}&keyman=${encodeURIComponent(by)}`);}
+  catch(e){toast("⚠️ sync ไม่สำเร็จ กด 🔄");}
 }
+
+// ========== KEYMAN MODAL ==========
+function openKeymanModal(){renderKeymanModal();document.getElementById("keymanModal").classList.add("show");}
+function closeKeymanModal(){document.getElementById("keymanModal").classList.remove("show");}
+function renderKeymanModal(){
+  document.getElementById("keymanModalList").innerHTML=keymanNames.map((n,i)=>
+    `<li><span>${n}</span><button class="btn-red" style="padding:3px 10px;font-size:12px" onclick="removeKeyman(${i})">ลบ</button></li>`).join("");
+}
+function addKeyman(){
+  const inp=document.getElementById("newKeymanName"),n=inp.value.trim();
+  if(!n)return alert("⚠️ กรุณากรอกชื่อ");
+  if(keymanNames.includes(n))return alert("⚠️ มีชื่อนี้แล้ว");
+  keymanNames.push(n);inp.value="";renderKeymanModal();
+}
+function removeKeyman(i){if(!confirm(`ลบ "${keymanNames[i]}"?`))return;keymanNames.splice(i,1);renderKeymanModal();}
+document.getElementById("keymanModal").addEventListener("click",function(e){if(e.target===this)closeKeymanModal();});
+
+// ========== SAVE ==========
+async function saveBooking(){
+  const d=document.getElementById("date").value;
+  const sv=document.getElementById("start").value;
+  const ev=document.getElementById("end").value;
+  const driver=driverSel.value,p1=p1Sel.value,p2=p2Sel.value;
+  if(!d)return alert("⚠️ กรุณาเลือกวันที่");
+  if(d<today)return alert("⚠️ ห้ามเลือกวันย้อนหลัง");
+  if(!driver)return alert("⚠️ กรุณาเลือกผู้ขับ");
+  if(!sv)return alert("⚠️ กรุณากรอกเวลาเริ่ม");
+  if(!ev)return alert("⚠️ กรุณากรอกเวลาจบ");
+  if(ev<=sv)return alert("⚠️ เวลาจบต้องมากกว่าเวลาเริ่ม");
+  if((p1&&p1===driver)||(p2&&p2===driver))return alert("⚠️ ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
+  if(p1&&p2&&p1===p2)return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
+  const sc=carSel.value;
+  const cf=bookings.find(b=>{
+    if(b.car!==sc||getDateKey(b.date)!==d||b.status!=="อนุมัติ")return false;
+    const bS=formatTime(b.start),bE=formatTime(b.end);
+    return bS!=="--:--"&&bE!=="--:--"&&sv<bE&&ev>bS;
+  });
+  if(cf)return alert(`⚠️ รถ "${sc}" ถูกใช้ช่วง ${formatTime(cf.start)}-${formatTime(cf.end)} แล้ว`);
+  syncStart();
+  try{
+    const res=await fetch(`${API}?${new URLSearchParams({action:"save",id:Date.now().toString(),date:d,car:sc,project:document.getElementById("project").value,driver,p1,p2,start:sv,end:ev})}`);
+    if(await res.text()==="Saved"){await loadData();toast("✅ บันทึกสำเร็จ");}
+    else alert("⚠️ บันทึกไม่สำเร็จ");
+  }catch(e){alert("⚠️ เชื่อมต่อไม่ได้");}
+  finally{syncEnd();}
+}
+
+// ========== APPROVE/DENY/DELETE ==========
+function approve(id){updateStatus(id,"อนุมัติ");}
+function deny(id){updateStatus(id,"ไม่อนุมัติ");}
+async function updateStatus(id,status){
+  const b=bookings.find(x=>String(x.id)===String(id));
+  if(b){b.status=status;b.approved=currentUser;saveCache(bookings);filterData(false);}
+  toast(status==="อนุมัติ"?"✅ อนุมัติแล้ว":"❌ ไม่อนุมัติ");
+  try{await fetch(`${API}?action=updateStatus&id=${id}&status=${encodeURIComponent(status)}&admin=${encodeURIComponent(currentUser)}`);}
+  catch(e){toast("⚠️ sync ไม่สำเร็จ กด 🔄");}
+}
+async function deleteRow(id){
+  if(!admin||!confirm("ลบรายการนี้?"))return;
+  bookings=bookings.filter(x=>String(x.id)!==String(id));saveCache(bookings);filterData(false);toast("🗑 ลบแล้ว");
+  try{await fetch(`${API}?action=delete&id=${id}&ts=${Date.now()}`);}
+  catch(e){toast("⚠️ sync ไม่สำเร็จ กด 🔄");}
+}
+
+// ========== EXPORT ==========
+function exportCSV(){
+  let csv="\uFEFF"+"วันที่,รถ,โครงการ,ผู้ขับ,ผู้ร่วม1,ผู้ร่วม2,เวลาเริ่ม,เวลาจบ,สถานะ,อนุมัติโดย,ผู้จ่ายกุญแจ,สถานะกุญแจ\n";
+  bookings.forEach(b=>{csv+=[formatDate(b.date),b.car,b.project,b.driver,b.p1||"",b.p2||"",formatTime(b.start),formatTime(b.end),b.status,b.approved||b.approvedby||"",b.keyman||"",b.keystatus||""].join(",")+"\n";});
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));a.download="fleet_"+today+".csv";a.click();
+}
+
+// ========== PEOPLE ==========
+function updatePeopleDropdown(){
+  const dr=driverSel.value,p1=p1Sel.value,p2=p2Sel.value;
+  [driverSel,p1Sel,p2Sel].forEach(s=>{
+    Array.from(s.options).forEach(o=>{
+      o.disabled=false;if(!o.value)return;
+      if(s!==driverSel&&o.value===dr)o.disabled=true;
+      if(s!==p1Sel&&o.value===p1&&p1)o.disabled=true;
+      if(s!==p2Sel&&o.value===p2&&p2)o.disabled=true;
+    });
+  });
+}
+[driverSel,p1Sel,p2Sel].forEach(s=>s.addEventListener("change",updatePeopleDropdown));
+
+// ========== SERVICE WORKER ==========
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+window.onload=()=>{loadData(true);updatePeopleDropdown();startAutoRefresh();renderDash();};
+</script>
+</body>
+</html>
