@@ -48,6 +48,10 @@
   .pagination button{margin:2px;padding:6px 13px;font-size:13px}
   .overdue{background:#ffdddd !important}
   .spinner{text-align:center;padding:20px;color:#888}
+  .header-top{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .header-top img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #1a1a2e}
+  .header-top h2{margin:0;color:#1a1a2e;font-size:20px}
+  .dev-credit{text-align:right;font-size:11px;color:#aaa;padding:12px 4px 0;font-style:italic}
   #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:600;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999;white-space:nowrap}
   #toast.show{opacity:1}
   #syncBar{position:fixed;top:0;left:0;right:0;height:3px;background:#2d6cdf;transform:scaleX(0);transform-origin:left;transition:transform .4s;z-index:9999}
@@ -88,7 +92,10 @@
     <button onclick="document.getElementById('installBanner').style.display='none'" style="background:#555">ปิด</button>
   </div>
 
-  <h2>🚗 เอกสารเบิกรถ Guts IOC</h2>
+  <div class="header-top">
+    <img src="icon-192.png" alt="logo">
+    <h2>เอกสารเบิกรถ Guts IOC</h2>
+  </div>
 
   <div class="grid">
     <div class="span2"><label>วันที่</label><input type="date" id="date" onchange="renderDash()"></div>
@@ -97,6 +104,7 @@
     <div><label>ผู้ขับ</label><select id="driver"></select></div>
     <div><label>ผู้ร่วมเดินทาง 1</label><select id="p1"></select></div>
     <div><label>ผู้ร่วมเดินทาง 2</label><select id="p2"></select></div>
+    <div><label>ผู้ร่วมเดินทาง 3</label><select id="p3"></select></div>
     <div><label>เวลาเริ่ม</label><input type="time" id="start"></div>
     <div><label>เวลาจบ</label><input type="time" id="end"></div>
   </div>
@@ -134,6 +142,7 @@
     </table>
   </div>
   <div class="pagination" id="page"></div>
+  <div class="dev-credit">Developed by: Watanachat Toonmak</div>
 </div>
 
 <div class="modal-overlay" id="keymanModal">
@@ -171,16 +180,17 @@ const carSel=document.getElementById("car");
 const driverSel=document.getElementById("driver");
 const p1Sel=document.getElementById("p1");
 const p2Sel=document.getElementById("p2");
+const p3Sel=document.getElementById("p3");
 const fcarSel=document.getElementById("fcar");
 const fdriverSel=document.getElementById("fdriver");
 
 fcarSel.add(new Option("ทั้งหมด",""));
 fdriverSel.add(new Option("ทั้งหมด",""));
 cars.forEach(c=>{carSel.add(new Option(c,c));fcarSel.add(new Option(c,c));});
-[p1Sel,p2Sel].forEach(s=>s.add(new Option("-- ไม่มี --","")));
+[p1Sel,p2Sel,p3Sel].forEach(s=>s.add(new Option("-- ไม่มี --","")));
 people.forEach(p=>{
   driverSel.add(new Option(p,p));fdriverSel.add(new Option(p,p));
-  [p1Sel,p2Sel].forEach(s=>s.add(new Option(p,p)));
+  [p1Sel,p2Sel,p3Sel].forEach(s=>s.add(new Option(p,p)));
 });
 
 // วันที่ปัจจุบัน Bangkok
@@ -330,7 +340,7 @@ function render(){
         ac=`<button class="btn-gray" onclick="deleteRow('${b.id}')">🗑 ลบ</button>`;
       }
     }
-    const comp=[b.p1,b.p2].filter(x=>x&&x!=="").join(", ")||"ไม่มี";
+    const comp=[b.p1,b.p2,b.p3].filter(x=>x&&x!=="").join(", ")||"ไม่มี";
     html+=`<tr>
       <td>${formatDate(b.date)}</td><td>${b.car||"-"}</td><td>${b.project||"-"}</td><td>${b.driver||"-"}</td>
       <td>${comp}</td><td>${formatTime(b.start)} - ${formatTime(b.end)}</td>
@@ -434,16 +444,27 @@ async function saveBooking(){
   const d=document.getElementById("date").value;
   const sv=document.getElementById("start").value;
   const ev=document.getElementById("end").value;
-  const driver=driverSel.value,p1=p1Sel.value,p2=p2Sel.value;
+  const driver=driverSel.value,p1=p1Sel.value,p2=p2Sel.value,p3=p3Sel.value;
   if(!d)return alert("⚠️ กรุณาเลือกวันที่");
   if(d<today)return alert("⚠️ ห้ามเลือกวันย้อนหลัง");
   if(!driver)return alert("⚠️ กรุณาเลือกผู้ขับ");
   if(!sv)return alert("⚠️ กรุณากรอกเวลาเริ่ม");
   if(!ev)return alert("⚠️ กรุณากรอกเวลาจบ");
   if(ev<=sv)return alert("⚠️ เวลาจบต้องมากกว่าเวลาเริ่ม");
-  if((p1&&p1===driver)||(p2&&p2===driver))return alert("⚠️ ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
+  if((p1&&p1===driver)||(p2&&p2===driver)||(p3&&p3===driver))return alert("⚠️ ผู้ขับห้ามซ้ำกับผู้ร่วมเดินทาง");
+  if(p1&&p2&&p1===p2)return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
+  if(p1&&p3&&p1===p3)return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
+  if(p2&&p3&&p2===p3)return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
   if(p1&&p2&&p1===p2)return alert("⚠️ ผู้ร่วมเดินทางห้ามซ้ำกัน");
   const sc=carSel.value;
+
+  // ✅ เช็คสถานะกุญแจ — ถ้ายังไม่คืนห้ามเบิกรถ
+  const keyNotReturn=bookings.find(b=>
+    b.car===sc && b.status==="อนุมัติ" && b.keystatus==="ยังไม่คืน"
+  );
+  if(keyNotReturn)return alert(`⚠️ รถ "${sc}" ยังไม่ได้คืนกุญแจจากรายการวันที่ ${formatDate(keyNotReturn.date)} \nกรุณาคืนกุญแจก่อนจึงจะเบิกรถได้`);
+
+  // เช็คเวลาซ้อนกัน
   const cf=bookings.find(b=>{
     if(b.car!==sc||getDateKey(b.date)!==d||b.status!=="อนุมัติ")return false;
     const bS=formatTime(b.start),bE=formatTime(b.end);
@@ -452,7 +473,7 @@ async function saveBooking(){
   if(cf)return alert(`⚠️ รถ "${sc}" ถูกใช้ช่วง ${formatTime(cf.start)}-${formatTime(cf.end)} แล้ว`);
   syncStart();
   try{
-    const res=await fetch(`${API}?${new URLSearchParams({action:"save",id:Date.now().toString(),date:d,car:sc,project:document.getElementById("project").value,driver,p1,p2,start:sv,end:ev})}`);
+    const res=await fetch(`${API}?${new URLSearchParams({action:"save",id:Date.now().toString(),date:d,car:sc,project:document.getElementById("project").value,driver,p1,p2,p3,start:sv,end:ev})}`);
     if(await res.text()==="Saved"){await loadData();toast("✅ บันทึกสำเร็จ");}
     else alert("⚠️ บันทึกไม่สำเร็จ");
   }catch(e){alert("⚠️ เชื่อมต่อไม่ได้");}
@@ -485,17 +506,18 @@ function exportCSV(){
 
 // ========== PEOPLE ==========
 function updatePeopleDropdown(){
-  const dr=driverSel.value,p1=p1Sel.value,p2=p2Sel.value;
-  [driverSel,p1Sel,p2Sel].forEach(s=>{
+  const dr=driverSel.value,p1=p1Sel.value,p2=p2Sel.value,p3=p3Sel.value;
+  [driverSel,p1Sel,p2Sel,p3Sel].forEach(s=>{
     Array.from(s.options).forEach(o=>{
       o.disabled=false;if(!o.value)return;
       if(s!==driverSel&&o.value===dr)o.disabled=true;
       if(s!==p1Sel&&o.value===p1&&p1)o.disabled=true;
       if(s!==p2Sel&&o.value===p2&&p2)o.disabled=true;
+      if(s!==p3Sel&&o.value===p3&&p3)o.disabled=true;
     });
   });
 }
-[driverSel,p1Sel,p2Sel].forEach(s=>s.addEventListener("change",updatePeopleDropdown));
+[driverSel,p1Sel,p2Sel,p3Sel].forEach(s=>s.addEventListener("change",updatePeopleDropdown));
 
 // ========== SERVICE WORKER ==========
 if('serviceWorker' in navigator){
