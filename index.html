@@ -271,7 +271,11 @@ function isOverdue(b){
 async function loadData(showSpinner=false){
   const cached=loadCache();
   if(cached&&cached.length>0){
-    bookings=cached;bookings.sort((a,b)=>Number(b.id)-Number(a.id));
+    bookings=cached;bookings.sort((a,b)=>{
+      const da=new Date(a.date||0), db=new Date(b.date||0);
+      if(db-da!==0) return db-da; // เรียงวันที่ใหม่สุดขึ้นก่อน
+      return Number(b.id)-Number(a.id); // ถ้าวันเดียวกัน เรียงด้วย id
+    });
     filterData(false);renderDash();
   }else if(showSpinner){
     document.getElementById("tb").innerHTML='<tr><td colspan="10" class="spinner">⏳ กำลังโหลดข้อมูล...</td></tr>';
@@ -282,7 +286,11 @@ async function loadData(showSpinner=false){
     const res=await fetch(API+"?ts="+Date.now());
     const fresh=JSON.parse(await res.text());
     saveCache(fresh);bookings=fresh;
-    bookings.sort((a,b)=>Number(b.id)-Number(a.id));
+    bookings.sort((a,b)=>{
+      const da=new Date(a.date||0), db=new Date(b.date||0);
+      if(db-da!==0) return db-da; // เรียงวันที่ใหม่สุดขึ้นก่อน
+      return Number(b.id)-Number(a.id); // ถ้าวันเดียวกัน เรียงด้วย id
+    });
     filterData(false);renderDash();
   }catch(e){
     if(!cached)document.getElementById("tb").innerHTML='<tr><td colspan="10" style="color:red">⚠️ โหลดข้อมูลไม่ได้</td></tr>';
