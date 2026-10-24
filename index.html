@@ -9,9 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="เบิกรถ IOC">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('ioc_theme')||'bright'}catch(e){document.documentElement.dataset.theme='bright'}</script>
 <title>เอกสารเบิกรถ Guts IOC</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&family=Kanit:wght@500;600;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Sarabun',Arial,sans-serif;background:#eef2f7;padding:16px;font-size:15px}
   .card{background:#fff;padding:20px;border-radius:14px;max-width:1400px;margin:auto;box-shadow:0 10px 30px rgba(0,0,0,.1);animation:cardIn .6s cubic-bezier(.2,.8,.2,1) both}
@@ -126,6 +127,11 @@
   .slot[data-state="booked"] .pad{animation:floorPulse 1.8s ease-in-out infinite}
   .slot[data-state="booked"] .pad::after{content:"ออกไปแล้ว";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 
+  /* แจ้งเตือน "รออนุมัติ" — ช่องเหลืองกะพริบ + ป้ายเหลืองเหนือช่อง (รวมรถที่จองล่วงหน้า) */
+  .slot[data-state="pending"] .pad{animation:padAmber 1.2s ease-in-out infinite}
+  .slot .alert{display:none;position:absolute;left:50%;top:-24px;transform:translateX(-50%);white-space:nowrap;background:#f59e0b;color:#1a1a2e;font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;box-shadow:0 2px 10px rgba(245,158,11,.7);z-index:3;animation:alertBlink 1s ease-in-out infinite}
+  .slot .alert.on{display:block}
+
   /* รถ: จอดอยู่ = เด้งเบาๆ / ถูกเบิก = ขับลงมาทางผู้ดูแล้วหายไป */
   .car{position:absolute;left:0;right:0;bottom:10px;transform-origin:50% 100%;transition:transform 1s cubic-bezier(.2,.8,.2,1),opacity .4s;transition-delay:var(--d,0ms)}
   .car .shadow{position:absolute;left:6%;right:6%;bottom:-3px;height:18px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.55),rgba(0,0,0,0) 70%)}
@@ -162,9 +168,86 @@
   @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes idleBob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-2px) scale(1.012,.99)}}
+  @keyframes padAmber{0%,100%{background:rgba(245,158,11,.30);box-shadow:0 0 0 0 rgba(245,158,11,0)}50%{background:rgba(245,158,11,.70);box-shadow:0 0 14px 3px rgba(245,158,11,.7)}}
+  @keyframes alertBlink{0%,100%{opacity:1;transform:translateX(-50%) scale(1)}50%{opacity:.45;transform:translateX(-50%) scale(1.08)}}
   @keyframes floorPulse{0%,100%{background:rgba(239,68,68,.30)}50%{background:rgba(239,68,68,.62)}}
   @keyframes driveBy{0%{transform:translateX(105vw)}100%{transform:translateX(-200px)}}
   @keyframes bump{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+
+  /* =====================================================
+     🌈 ธีมสดใส (สลับกลับเป็นแบบเรียบได้ที่ปุ่มมุมบน)
+     ===================================================== */
+  .sky,.road{display:none}
+  html[data-theme="bright"] .sky{display:block;position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+  .cloud{position:absolute;left:-240px;width:130px;height:38px;background:#fff;border-radius:40px;opacity:.92;animation:cloudMove linear infinite}
+  .cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+  .cloud::before{width:58px;height:58px;top:-28px;left:20px}
+  .cloud::after{width:44px;height:44px;top:-20px;left:68px}
+  html[data-theme="bright"] .road{display:block;position:fixed;left:0;right:0;bottom:0;height:46px;background:linear-gradient(#5b647c,#3a415a);border-top:4px solid #1f2a44;z-index:50;pointer-events:none;overflow:hidden}
+  .road::before{content:"";position:absolute;left:0;right:0;top:58%;border-top:3px dashed #ffe066;opacity:.85}
+  .roadcar{position:absolute;bottom:3px;left:0;width:92px;height:auto;will-change:transform;animation:roadDrive linear forwards;filter:drop-shadow(0 3px 2px rgba(0,0,0,.4))}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:10000;overflow:hidden}
+  .confetti i{position:absolute;top:-16px;width:9px;height:14px;animation:confFall ease-in forwards}
+
+  html[data-theme="bright"]{--ink:#1f2a44}
+  html[data-theme="bright"] body{background:linear-gradient(180deg,#8fd3ff 0%,#c9ecff 40%,#eaf8ff 100%) fixed;padding-bottom:70px}
+  html[data-theme="bright"] .card{border:3px solid var(--ink);border-radius:24px;box-shadow:0 8px 0 var(--ink);background:#fffefa}
+  html[data-theme="bright"] h2,html[data-theme="bright"] .lot-title,html[data-theme="bright"] th,
+  html[data-theme="bright"] .badge,html[data-theme="bright"] .key-badge,html[data-theme="bright"] button,
+  html[data-theme="bright"] .chip,html[data-theme="bright"] .login-status{font-family:'Kanit','Sarabun',sans-serif}
+  html[data-theme="bright"] h2{font-size:25px;font-weight:700}
+  html[data-theme="bright"] .header-top img{border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink)}
+  html[data-theme="bright"] .grid label,html[data-theme="bright"] .filter label{font-family:'Kanit','Sarabun',sans-serif;font-weight:500;color:#35507a}
+  html[data-theme="bright"] input,html[data-theme="bright"] select{border:2px solid #9bbbe0;border-radius:12px}
+  html[data-theme="bright"] input:focus,html[data-theme="bright"] select:focus{border-color:#ffb703;box-shadow:0 0 0 4px rgba(255,183,3,.3)}
+
+  /* ปุ่มแบบสติกเกอร์ */
+  html[data-theme="bright"] button{border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);font-weight:600;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.25);transition:transform .12s,box-shadow .12s,filter .12s}
+  html[data-theme="bright"] button:hover{transform:translateY(-2px);box-shadow:0 6px 0 var(--ink);filter:brightness(1.06)}
+  html[data-theme="bright"] button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink);opacity:1}
+  html[data-theme="bright"] .btn-blue{background:#2d8cff}
+  html[data-theme="bright"] .btn-red{background:#ff5d73}
+  html[data-theme="bright"] .btn-green{background:#2fcf8b}
+  html[data-theme="bright"] .btn-orange{background:#ff9f1c}
+  html[data-theme="bright"] .btn-purple{background:#8b5cf6}
+  html[data-theme="bright"] .btn-gray{background:#64748b}
+  html[data-theme="bright"] .table-wrap button,html[data-theme="bright"] .pagination button{border-width:2px;border-radius:10px;box-shadow:0 2px 0 var(--ink)}
+  html[data-theme="bright"] .table-wrap button:hover,html[data-theme="bright"] .pagination button:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--ink)}
+  html[data-theme="bright"] .modal button{border-width:2px}
+  html[data-theme="bright"] #installBanner button{border:2px solid var(--ink);box-shadow:0 2px 0 var(--ink)}
+
+  /* ตารางและสติกเกอร์สถานะ */
+  html[data-theme="bright"] .table-wrap{border:3px solid var(--ink);border-radius:18px;background:#fff}
+  html[data-theme="bright"] th{background:#1d4ed8;font-weight:600;border-color:#3b66e0}
+  html[data-theme="bright"] th,html[data-theme="bright"] td{border-color:#dbe9f7}
+  html[data-theme="bright"] tbody tr:nth-child(even){background:#f4faff}
+  html[data-theme="bright"] tbody tr:hover{background:#fff4c2}
+  html[data-theme="bright"] .badge{border:2px solid var(--ink);border-radius:14px;padding:2px 12px;font-weight:600;color:var(--ink)}
+  html[data-theme="bright"] .badge.ok{background:#4be3a0}
+  html[data-theme="bright"] .badge.wait{background:#ffd23f}
+  html[data-theme="bright"] .badge.no{background:#ff5d73;color:#fff}
+  html[data-theme="bright"] .key-badge{border:2px solid var(--ink);font-weight:600;color:var(--ink)}
+  html[data-theme="bright"] .key-badge.out{background:#ffe08a}
+  html[data-theme="bright"] .key-badge.back{background:#b9f6d3}
+
+  /* แถบสถานะ / ลานจอดรถ / กล่องอื่นๆ */
+  html[data-theme="bright"] .dashboard{background:#fff3c4;border:2px solid var(--ink);border-radius:14px;box-shadow:0 3px 0 var(--ink)}
+  html[data-theme="bright"] .login-status{border:2px solid var(--ink);background:#e9f5ff}
+  html[data-theme="bright"] .lot{border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink);background:linear-gradient(160deg,#fff7d6,#ffe7f0)}
+  html[data-theme="bright"] .lot-scene{border:2px solid var(--ink)}
+  html[data-theme="bright"] .modal{border:3px solid var(--ink);box-shadow:0 8px 0 var(--ink)}
+  html[data-theme="bright"] #toast{background:var(--ink);color:#ffe066;border:2px solid #ffe066;bottom:64px}
+  html[data-theme="bright"] #syncBar{background:linear-gradient(90deg,#ffd23f,#ff9f1c,#ff5d73,#ffd23f);background-size:200% 100%}
+  html[data-theme="bright"] #driveBy{display:none}
+
+  @keyframes cloudMove{from{transform:translateX(0)}to{transform:translateX(calc(100vw + 480px))}}
+  @keyframes roadDrive{from{transform:translateX(var(--from))}to{transform:translateX(var(--to))}}
+  @keyframes confFall{to{transform:translate(var(--dx),105vh) rotate(var(--rot))}}
+  @media(max-width:700px){
+    html[data-theme="bright"] .road{display:none}
+    html[data-theme="bright"] body{padding-bottom:16px}
+    html[data-theme="bright"] #toast{bottom:24px}
+  }
 
   @media (prefers-reduced-motion: reduce){
     *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;transition-delay:0ms !important}
@@ -177,6 +260,7 @@
     .lot-scene{height:136px}
     .slot{height:96px}
     .pad{height:18px}
+    .slot .alert{font-size:10px;padding:1px 6px;top:-20px}
     .car{bottom:6px}
     .slots{bottom:10px}
     .lot-title span{display:none}
@@ -191,6 +275,13 @@
 <div id="syncBar"></div>
 <div id="offlineBanner">📵 ออฟไลน์ — แสดงข้อมูลล่าสุดจาก cache</div>
 <div id="toast"></div>
+<div class="sky" aria-hidden="true">
+  <span class="cloud" style="top:7%;animation-duration:110s;animation-delay:-20s"></span>
+  <span class="cloud" style="top:20%;scale:1.4;animation-duration:150s;animation-delay:-90s"></span>
+  <span class="cloud" style="top:38%;scale:.8;animation-duration:90s;animation-delay:-55s"></span>
+  <span class="cloud" style="top:56%;scale:1.1;animation-duration:130s;animation-delay:-10s"></span>
+</div>
+<div class="road" id="road" aria-hidden="true"></div>
 <div id="driveBy"><span class="bump">🚗</span><span class="bump" style="animation-delay:.08s">💨</span></div>
 
 <div class="card">
@@ -203,6 +294,7 @@
   <div class="header-top">
     <img src="icon-192.png" alt="logo">
     <h2>เอกสารเบิกรถ Guts IOC</h2>
+    <button class="btn-purple" id="themeBtn" onclick="toggleTheme()" style="margin-left:auto">🎨 ธีม</button>
   </div>
 
   <div class="grid">
@@ -349,7 +441,7 @@ function buildLot() {
     const src = CAR_IMG[(c.match(/\d{4}$/) || [''])[0]] || '';
     // class "pre" = รถอยู่นอกลาน รอขับเข้ามาจอดทีละคัน
     html += `<div class="slot pre" data-i="${i}" data-state="free" style="--d:${i*140}ms">` +
-              `<div class="pad"></div>` +
+              `<div class="pad"></div><div class="alert"></div>` +
               `<div class="car"><span class="shadow"></span>` +
                 `<img src="${src}" alt="${shortCar(c)}" draggable="false" style="animation-delay:${(-i*0.45).toFixed(2)}s"></div>` +
             `</div>`;
@@ -385,7 +477,7 @@ function lotTipText(slot) {
   const i = +slot.dataset.i, st = slot.dataset.state, b = slot._info;
   let t = shortCar(cars[i]);
   if (st === 'free') return t + '\n✅ ว่าง (รถจอดอยู่)';
-  t += st === 'booked' ? '\n🔴 เบิกออกไปแล้ว' : '\n🟡 รออนุมัติ';
+  t += st === 'booked' ? '\n🔴 เบิกออกไปแล้ว' : '\n🟡 รออนุมัติ' + (b ? ' · ' + formatDate(b.date) : '');
   if (b) t += '\n👤 ' + (b.driver || '-') + '\n⏰ ' + formatTime(b.start) + ' - ' + formatTime(b.end) +
               (b.keystatus==='ยังไม่คืน' ? '\n🔑 ยังไม่คืนกุญแจ' : '');
   return t;
@@ -399,24 +491,36 @@ function carOutBooking(c, d) {
     (getDateKey(b.date)===d || (b.keystatus==='ยังไม่คืน' && getDateKey(b.date) < d))) || null;
 }
 
-// booked → รถขับออกไป เหลือช่องแดง / free → รถขับกลับเข้ามา
+// คำขอที่ยัง "รออนุมัติ" ของรถคันนี้ ตั้งแต่วันที่เลือกเป็นต้นไป (รวมที่จองล่วงหน้า) เรียงจากใกล้สุด
+function pendingBookings(c, d) {
+  if (!d) return [];
+  return bookings.filter(b => b.car===c && b.status==='รออนุมัติ' && getDateKey(b.date) >= d)
+                 .sort((x,y) => getDateKey(x.date) < getDateKey(y.date) ? -1 : 1);
+}
+function pendingLabel(pd) {
+  return 'รออนุมัติ ' + formatDate(pd[0].date).slice(0,5) + (pd.length > 1 ? ' (+' + (pd.length-1) + ')' : '');
+}
+
+// booked → รถขับออกไป เหลือช่องแดง / free → รถขับกลับเข้ามา / pending → ช่องเหลืองกะพริบ
 function updateLot(d) {
   const slots = document.querySelectorAll('#lotSlots .slot');
   const chips = document.querySelectorAll('#lotChips .chip .dot');
   if (!slots.length) return;
   cars.forEach((c,i) => {
     let state = 'free', info = null;
-    if (d) {
-      const list = bookings.filter(b => getDateKey(b.date)===d && b.car===c);
-      const ap = carOutBooking(c, d);
-      const pe = list.find(b => b.status === 'รออนุมัติ');
-      if (ap) { state='booked';  info=ap; }
-      else if (pe) { state='pending'; info=pe; }
-    }
+    const pd = pendingBookings(c, d);
+    const ap = carOutBooking(c, d);
+    if (ap)              { state='booked';  info=ap; }
+    else if (pd.length)  { state='pending'; info=pd[0]; }
     const slot = slots[i];
     if (!slot) return;
     if (slot.dataset.state !== state) slot.dataset.state = state;
     slot._info = info;
+    const al = slot.querySelector('.alert');
+    if (al) {
+      if (pd.length) { al.textContent = '⏳ ' + pendingLabel(pd); al.classList.add('on'); }
+      else           { al.textContent = ''; al.classList.remove('on'); }
+    }
     if (chips[i]) chips[i].className = 'dot ' + (state==='free' ? 'green' : state==='booked' ? 'red' : 'amber');
   });
 }
@@ -578,6 +682,10 @@ function renderDash() {
     }
   });
   if (!found) html += `<span class="dash-item"><span class="dot green"></span>รถว่างทุกคัน</span>`;
+  cars.forEach((c,i) => {
+    const pd = pendingBookings(c, d);
+    if (pd.length) html += `<span class="dash-item" style="animation-delay:${i*70}ms"><span class="dot amber"></span>${c} ${pendingLabel(pd)}</span>`;
+  });
   el.innerHTML = html;
 }
 
@@ -793,7 +901,8 @@ async function saveBooking() {
       firstPaint = true;
       await loadData();
       toast("✅ บันทึกสำเร็จ");
-      driveBy();   // 🚗 รถวิ่งผ่านหน้าจอ
+      driveBy();   // 🚗 รถวิ่งผ่านหน้าจอ (ธีมเรียบ)
+      confetti();  // 🎉 พลุกระดาษ (ธีมสดใส)
     }
     else alert("⚠️ บันทึกไม่สำเร็จ");
   } catch(e) { alert("⚠️ เชื่อมต่อไม่ได้"); }
@@ -852,13 +961,61 @@ function updatePeopleDropdown() {
 }
 [driverSel,p1Sel,p2Sel,p3Sel].forEach(s => s.addEventListener("change", updatePeopleDropdown));
 
+// =====================================================
+//  🌈 ธีมสดใส: สลับธีม · รถวิ่งบนถนนด้านล่าง · พลุกระดาษ
+// =====================================================
+let roadTimer = null;
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('ioc_theme', t); } catch(e) {}
+  const b = document.getElementById('themeBtn');
+  if (b) b.textContent = t === 'bright' ? '🧼 ธีมเรียบ' : '🌈 ธีมสดใส';
+  if (t === 'bright') startRoad(); else stopRoad();
+}
+function toggleTheme() { setTheme(document.documentElement.dataset.theme === 'bright' ? 'plain' : 'bright'); }
+
+function spawnRoadCar() {
+  const road = document.getElementById('road');
+  if (!road || document.hidden || window.innerWidth < 700 || document.documentElement.dataset.theme !== 'bright') return;
+  const keys = Object.keys(CAR_IMG), k = keys[Math.floor(Math.random()*keys.length)];
+  const img = document.createElement('img');
+  img.className = 'roadcar'; img.src = CAR_IMG[k]; img.alt = ''; img.draggable = false;
+  img.style.setProperty('--from', (window.innerWidth + 40) + 'px');
+  img.style.setProperty('--to', '-170px');
+  img.style.animationDuration = (9 + Math.random()*5) + 's';
+  img.addEventListener('animationend', () => img.remove());
+  road.appendChild(img);
+}
+function scheduleRoad() { roadTimer = setTimeout(() => { spawnRoadCar(); scheduleRoad(); }, 6000 + Math.random()*7000); }
+function startRoad() { stopRoad(); roadTimer = setTimeout(() => { spawnRoadCar(); scheduleRoad(); }, 1200); }
+function stopRoad() { clearTimeout(roadTimer); roadTimer = null; document.querySelectorAll('#road .roadcar').forEach(e => e.remove()); }
+
+function confetti() {
+  if (document.documentElement.dataset.theme !== 'bright') return;
+  const colors = ['#ff5d73','#ffd23f','#2fcf8b','#2d8cff','#8b5cf6','#ff9f1c'];
+  const wrap = document.createElement('div'); wrap.className = 'confetti';
+  for (let i=0; i<70; i++) {
+    const p = document.createElement('i');
+    p.style.left = (10 + Math.random()*80) + 'vw';
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--dx', ((Math.random()-.5)*260) + 'px');
+    p.style.setProperty('--rot', (360 + Math.random()*720) + 'deg');
+    p.style.animationDuration = (1.6 + Math.random()*1.2) + 's';
+    p.style.animationDelay = (Math.random()*.25) + 's';
+    if (i % 3 === 0) p.style.borderRadius = '50%';
+    wrap.appendChild(p);
+  }
+  document.body.appendChild(wrap);
+  setTimeout(() => wrap.remove(), 3400);
+}
+
 // ========== SERVICE WORKER ==========
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 // ========== INIT ==========
-window.onload = () => { loadData(true); updatePeopleDropdown(); startAutoRefresh(); renderDash(); };
+window.onload = () => { setTheme(document.documentElement.dataset.theme || 'bright'); loadData(true); updatePeopleDropdown(); startAutoRefresh(); renderDash(); };
 </script>
 </body>
 </html>
