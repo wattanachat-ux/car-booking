@@ -48,8 +48,8 @@
   .dot.amber{background:#f59e0b;animation:dotPulseAmber 1.8s ease-out infinite}
   .dash-item{display:inline-flex;align-items:center;animation:fadeSlide .4s ease both}
 
-  .filter{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
-  .filter select,.filter input{width:auto;min-width:130px}
+  .filter{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .filter select,.filter input{width:auto;min-width:115px}
   .table-wrap{overflow-x:auto;margin-top:18px}
   table{width:100%;border-collapse:collapse;min-width:900px}
   th,td{border:1px solid #ddd;padding:8px 10px;text-align:center;font-size:13px}
@@ -109,43 +109,32 @@
   .span2{grid-column:span 2}
 
   /* =====================================================
-     🅿️ ลานจอดรถ 3D — รถเรียงหน้ากระดาน 1 แถว
+     🅿️ ลานจอดรถ — ใช้ภาพรถ Choro Q จริงของ GUTS
      รถที่ถูกเบิก = ขับออกไป เหลือช่องจอดสีแดง
      ===================================================== */
   .lot{grid-column:3 / span 2;grid-row:3 / span 2;position:relative;overflow:hidden;background:linear-gradient(160deg,#f0f4ff,#dfe9ff);border:1.5px solid #c5d5f5;border-radius:12px;padding:8px 10px 8px;animation:popIn .6s cubic-bezier(.34,1.56,.64,1) .2s both}
   .lot-title{font-size:12px;font-weight:700;color:#1a1a2e;display:flex;justify-content:space-between;align-items:center;gap:8px}
   .lot-title span{font-weight:500;color:#667;font-size:11px}
-  .lot-scene{height:185px;perspective:760px;perspective-origin:50% 30%;position:relative;overflow:hidden}
-  .lot-stage{--sc:1.4;position:absolute;left:50%;top:56%;width:306px;height:92px;margin:-46px 0 0 -153px;transform-style:preserve-3d;transform:rotateX(56deg) rotateZ(var(--rz,-10deg)) scale(var(--sc));transition:transform .25s ease-out}
-  .lot-ground{position:absolute;inset:-14px -14px -42px -14px;background:#2f3646;border-radius:6px;box-shadow:0 0 0 3px #1f2430,0 18px 30px rgba(0,0,0,.35)}
-  .lot-ground::after{content:"";position:absolute;left:12px;right:12px;bottom:16px;border-top:2px dashed rgba(255,255,255,.35)}
+  .lot-scene{position:relative;height:196px;margin-top:6px;overflow:hidden;border-radius:10px;background:linear-gradient(180deg,#cfe6ff 0%,#eef6ff 50%,#4a5367 50.2%,#2c3240 100%)}
+  .lot-scene::after{content:"";position:absolute;left:3%;right:3%;bottom:8px;border-top:2px dashed rgba(255,255,255,.28)}
+  .slots{position:absolute;left:2%;right:2%;bottom:16px;display:flex;gap:2%;align-items:flex-end}
+  .slot{position:relative;flex:1;height:138px;--stbg:rgba(34,197,94,.34);cursor:pointer}
+  .slot[data-state="booked"] {--stbg:rgba(239,68,68,.45)}
+  .slot[data-state="pending"]{--stbg:rgba(245,158,11,.40)}
+  .pad{position:absolute;left:3%;right:3%;bottom:0;height:30px;border-radius:50%;border:2px dashed rgba(255,255,255,.75);background:var(--stbg);transition:background .5s,filter .2s}
+  .slot:hover .pad{filter:brightness(1.4)}
+  .slot[data-state="booked"] .pad{animation:floorPulse 1.8s ease-in-out infinite}
+  .slot[data-state="booked"] .pad::after{content:"ออกไปแล้ว";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 
-  .slot{position:absolute;width:66px;height:92px;transform-style:preserve-3d;--st:#22c55e;--stbg:rgba(34,197,94,.28);cursor:pointer}
-  .slot[data-state="booked"] {--st:#ef4444;--stbg:rgba(239,68,68,.34)}
-  .slot[data-state="pending"]{--st:#f59e0b;--stbg:rgba(245,158,11,.30)}
-  .slot .floor{position:absolute;inset:0;border:2px dashed rgba(255,255,255,.6);border-radius:3px;background:var(--stbg);transition:background .5s,filter .2s}
-  .slot:hover .floor{filter:brightness(1.5)}
-  .slot[data-state="booked"] .floor{animation:floorPulse 1.8s ease-in-out infinite}
-  .slot[data-state="booked"] .floor::after{content:"ออกไปแล้ว";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+  /* รถ: จอดอยู่ = เด้งเบาๆ / ถูกเบิก = ขับลงมาทางผู้ดูแล้วหายไป */
+  .car{position:absolute;left:0;right:0;bottom:10px;transform-origin:50% 100%;transition:transform 1s cubic-bezier(.2,.8,.2,1),opacity .4s;transition-delay:var(--d,0ms)}
+  .car .shadow{position:absolute;left:6%;right:6%;bottom:-3px;height:18px;border-radius:50%;background:radial-gradient(rgba(0,0,0,.55),rgba(0,0,0,0) 70%)}
+  .car img{position:relative;display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none;transform-origin:50% 100%;animation:idleBob 2.6s ease-in-out infinite;transition:translate .25s}
+  .slot:hover .car img{translate:0 -5px}
+  .slot[data-state="booked"] .car{transform:translate(-34px,190px) scale(1.7);opacity:0;transition:transform 1.1s cubic-bezier(.55,0,.85,.45),opacity .45s;transition-delay:var(--d,0ms),calc(var(--d,0ms) + .6s)}
+  .slot.pre .car{transform:translate(-34px,190px) scale(1.7);opacity:0;transition:none}
 
-  /* รถ: ขับเข้า/ออกตามแกน y (หัวรถหันเข้าหาผู้ดู) */
-  .carwrap{position:absolute;transform-style:preserve-3d;transition:transform 1s cubic-bezier(.2,.8,.2,1);transition-delay:var(--d,0ms)}
-  .carrot{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateZ(90deg)}
-  .slot[data-state="booked"] .carwrap{transform:translateY(380px);transition:transform 1.1s cubic-bezier(.55,0,.85,.45);transition-delay:var(--d,0ms)}
-  .slot.pre .carwrap{transform:translateY(380px);transition:none}
-
-  .box{position:absolute;left:0;top:0;width:var(--l);height:var(--w);transform-style:preserve-3d}
-  .box .f{position:absolute;display:block;background:var(--c,#888);transition:background .5s}
-  .box .top{left:0;top:0;width:var(--l);height:var(--w);transform:translateZ(var(--h));background:var(--ct,var(--c));filter:brightness(1.12)}
-  .box .n{left:0;top:0;width:var(--l);height:var(--h);transform-origin:top;transform:rotateX(90deg);filter:brightness(.82)}
-  .box .s{left:0;top:var(--w);width:var(--l);height:var(--h);transform-origin:top;transform:rotateX(90deg);filter:brightness(.68)}
-  .box .w{left:0;top:0;width:var(--h);height:var(--w);transform-origin:left;transform:rotateY(-90deg);filter:brightness(.88)}
-  .box .e{left:var(--l);top:0;width:var(--h);height:var(--w);transform-origin:left;transform:rotateY(-90deg);filter:brightness(.6)}
-
-  .beacon{position:absolute;width:0;height:0;transform-style:preserve-3d;animation:beacon 3s ease-in-out infinite}
-  .beacon .f{box-shadow:0 0 10px var(--st)}
-
-  .lot-chips{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;margin-top:2px}
+  .lot-chips{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;margin-top:6px}
   .chip{font-size:11px;font-weight:600;color:#334;display:inline-flex;align-items:center;white-space:nowrap}
   .chip .dot{width:9px;height:9px;margin-right:4px}
   .lot-tip{position:absolute;pointer-events:none;background:#1a1a2e;color:#fff;font-size:12px;line-height:1.5;padding:6px 10px;border-radius:8px;white-space:pre-line;opacity:0;transition:opacity .15s;z-index:5;box-shadow:0 6px 16px rgba(0,0,0,.3)}
@@ -172,7 +161,7 @@
   @keyframes dotPulseAmber{0%{box-shadow:0 0 0 0 rgba(245,158,11,.6)}70%{box-shadow:0 0 0 8px rgba(245,158,11,0)}100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}}
   @keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes beacon{0%{transform:translateZ(34px) rotateZ(0deg)}50%{transform:translateZ(42px) rotateZ(180deg)}100%{transform:translateZ(34px) rotateZ(360deg)}}
+  @keyframes idleBob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-2px) scale(1.012,.99)}}
   @keyframes floorPulse{0%,100%{background:rgba(239,68,68,.30)}50%{background:rgba(239,68,68,.62)}}
   @keyframes driveBy{0%{transform:translateX(105vw)}100%{transform:translateX(-200px)}}
   @keyframes bump{from{transform:translateY(0)}to{transform:translateY(-3px)}}
@@ -185,8 +174,11 @@
     .grid{grid-template-columns:1fr 1fr;grid-template-rows:none}
     .span2{grid-column:span 2}
     .lot,.grid-actions{grid-column:1 / span 2;grid-row:auto}
-    .lot-scene{height:150px}
-    .lot-stage{--sc:.8}
+    .lot-scene{height:136px}
+    .slot{height:96px}
+    .pad{height:18px}
+    .car{bottom:6px}
+    .slots{bottom:10px}
     .lot-title span{display:none}
     .btn-row{gap:6px}
     button{padding:9px 12px;font-size:13px}
@@ -227,7 +219,7 @@
     <!-- 🅿️ ลานจอดรถ 3D (ขวา คร่อม 2 แถว) -->
     <div class="lot" id="lot">
       <div class="lot-title">🅿️ ลานจอดรถ <span>ตามวันที่ที่เลือก · ชี้ที่ช่องจอดดูรายละเอียด</span></div>
-      <div class="lot-scene"><div class="lot-stage" id="lotStage"><div class="lot-ground"></div></div></div>
+      <div class="lot-scene" id="lotScene"><div class="slots" id="lotSlots"></div></div>
       <div class="lot-chips" id="lotChips"></div>
       <div class="lot-tip" id="lotTip"></div>
     </div>
@@ -246,15 +238,14 @@
         <button class="btn-gray"   id="refreshBtn" onclick="forceRefresh()" style="padding:10px 14px" title="รีเฟรช">🔄</button>
       </div>
       <div class="dashboard" id="dash">กำลังโหลด...</div>
+      <div class="filter">
+        <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองรถ</label><select id="fcar"></select></div>
+        <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองผู้ขับ</label><select id="fdriver"></select></div>
+        <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองวันที่</label><input type="date" id="fdate"></div>
+        <button class="btn-blue" onclick="filterData()">🔍 Filter</button>
+        <button class="btn-gray" onclick="clearFilter()">✖ ล้าง</button>
+      </div>
     </div>
-  </div>
-
-  <div class="filter">
-    <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองรถ</label><select id="fcar"></select></div>
-    <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองผู้ขับ</label><select id="fdriver"></select></div>
-    <div><label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:3px">กรองวันที่</label><input type="date" id="fdate"></div>
-    <button class="btn-blue" onclick="filterData()">🔍 Filter</button>
-    <button class="btn-gray" onclick="clearFilter()">✖ ล้าง</button>
   </div>
 
   <div class="table-wrap">
@@ -337,87 +328,57 @@ function skeletonRows(n=6) {
 document.getElementById("tb").innerHTML = skeletonRows();
 
 // =====================================================
-//  🅿️ ลานจอดรถ 3D (รถเรียงหน้ากระดาน)
+//  🅿️ ลานจอดรถ (ภาพรถ Choro Q จริงของ GUTS — โฟลเดอร์ img/)
 // =====================================================
-const SLOT_W = 66, SLOT_H = 92, SLOT_GAP = 14;
-const CAR_COLORS = ['#e5e7eb','#3b82f6','#475569','#f1f5f9'];
-const GLASS      = '#bcd9f2';
+const CAR_IMG = {
+  '1240':'img/yaris-1240.webp',
+  '9085':'img/yaris-9085.webp',
+  '6727':'img/revo-6727.webp',
+  '4846':'img/revo-4846.webp'
+};
 
 function shortCar(c) { return c.replace(/^toyota\s+/i,''); }
 
-// กล่อง 3D: l=ยาว(x) w=กว้าง(y) h=สูง(z) ที่ตำแหน่ง x,y,z
-function box(l,w,h,x,y,z,c,roof) {
-  return `<div class="box" style="--l:${l}px;--w:${w}px;--h:${h}px;--c:${c};${roof?`--ct:${roof};`:''}transform:translate3d(${x}px,${y}px,${z}px)">` +
-         `<i class="f top"></i><i class="f n"></i><i class="f s"></i><i class="f w"></i><i class="f e"></i></div>`;
-}
-
-// สร้างรถในแนวแกน x (หัวรถ = +x) แล้ว .carrot จะหมุน 90° ให้หัวรถหันเข้าหาผู้ดู
-function carHTML(model,color,L,W) {
-  let h = '';
-  [8, L-18].forEach(x => { h += box(10,3,8,x,-2,0,'#16181d'); h += box(10,3,8,x,W-1,0,'#16181d'); });
-  if (model === 'revo') {
-    h += box(L,W,10,0,0,4,color);
-    h += box(26,W,4,2,0,14,color);
-    h += box(28,W-4,11,28,2,14,GLASS,color);
-  } else {
-    h += box(L,W,9,0,0,4,color);
-    h += box(30,W-4,9,14,2,13,GLASS,color);
-  }
-  h += box(2,7,3,L,3,9,'#fff3a0');  h += box(2,7,3,L,W-10,9,'#fff3a0');
-  h += box(2,7,3,-2,3,9,'#ff4d4d'); h += box(2,7,3,-2,W-10,9,'#ff4d4d');
-  h += `<div class="beacon" style="left:${L/2}px;top:${W/2}px">${box(8,8,8,-4,-4,0,'var(--st)')}</div>`;
-  return h;
-}
-
 function buildLot() {
-  const stage = document.getElementById('lotStage');
-  const chips = document.getElementById('lotChips');
-  const lot   = document.getElementById('lot');
-  const tip   = document.getElementById('lotTip');
+  const slotsEl = document.getElementById('lotSlots');
+  const chips   = document.getElementById('lotChips');
+  const lot     = document.getElementById('lot');
+  const tip     = document.getElementById('lotTip');
   let html = '', ch = '';
   cars.forEach((c,i) => {
-    const model = /revo/i.test(c) ? 'revo' : 'yaris';
-    const L = model==='revo' ? 64 : 56, W = model==='revo' ? 33 : 30;
+    const src = CAR_IMG[(c.match(/\d{4}$/) || [''])[0]] || '';
     // class "pre" = รถอยู่นอกลาน รอขับเข้ามาจอดทีละคัน
-    html += `<div class="slot pre" data-i="${i}" data-state="free" style="left:${i*(SLOT_W+SLOT_GAP)}px;top:0;--d:${i*140}ms">` +
-              `<div class="floor"></div>` +
-              `<div class="carwrap" style="left:${(SLOT_W-L)/2}px;top:${(SLOT_H-W)/2}px;width:${L}px;height:${W}px">` +
-                `<div class="carrot">${carHTML(model,CAR_COLORS[i%4],L,W)}</div>` +
-              `</div>` +
+    html += `<div class="slot pre" data-i="${i}" data-state="free" style="--d:${i*140}ms">` +
+              `<div class="pad"></div>` +
+              `<div class="car"><span class="shadow"></span>` +
+                `<img src="${src}" alt="${shortCar(c)}" draggable="false" style="animation-delay:${(-i*0.45).toFixed(2)}s"></div>` +
             `</div>`;
     ch += `<span class="chip" data-i="${i}"><span class="dot green"></span>${shortCar(c)}</span>`;
   });
-  stage.insertAdjacentHTML('beforeend', html);
+  slotsEl.innerHTML = html;
   chips.innerHTML = ch;
 
-  // ขับเข้ามาจอดเรียงหน้ากระดานทีละคัน
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    stage.querySelectorAll('.slot').forEach(s => s.classList.remove('pre'));
-  }));
-
-  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // รอรูปโหลดเสร็จ แล้วให้รถขับเข้ามาจอดเรียงหน้ากระดานทีละคัน
+  const imgs  = Array.from(slotsEl.querySelectorAll('img'));
+  const ready = Promise.all(imgs.map(im => im.decode ? im.decode().catch(() => {}) : Promise.resolve()));
+  Promise.race([ready, new Promise(r => setTimeout(r, 2500))]).then(() =>
+    requestAnimationFrame(() => requestAnimationFrame(() =>
+      slotsEl.querySelectorAll('.slot').forEach(s => s.classList.remove('pre')))));
 
   lot.addEventListener('mousemove', e => {
     const r = lot.getBoundingClientRect();
-    if (!reduce) {
-      const x = (e.clientX - r.left)/r.width - .5;
-      stage.style.setProperty('--rz', (-10 + x*24) + 'deg');   // เอียงตามเมาส์
-    }
     const slot = e.target.closest && e.target.closest('.slot');
     if (slot) {
       tip.textContent = lotTipText(slot);
       tip.classList.add('show');
       let left = e.clientX - r.left + 12, top = e.clientY - r.top + 12;
-      if (left + tip.offsetWidth > r.width - 4)  left = r.width - tip.offsetWidth - 4;
-      if (top  + tip.offsetHeight > r.height - 4) top = e.clientY - r.top - tip.offsetHeight - 8;
+      if (left + tip.offsetWidth > r.width - 4)   left = r.width - tip.offsetWidth - 4;
+      if (top  + tip.offsetHeight > r.height - 4) top  = e.clientY - r.top - tip.offsetHeight - 8;
       tip.style.left = Math.max(4,left) + 'px';
       tip.style.top  = Math.max(4,top)  + 'px';
     } else tip.classList.remove('show');
   });
-  lot.addEventListener('mouseleave', () => {
-    stage.style.removeProperty('--rz');
-    tip.classList.remove('show');
-  });
+  lot.addEventListener('mouseleave', () => tip.classList.remove('show'));
 }
 
 function lotTipText(slot) {
@@ -425,20 +386,29 @@ function lotTipText(slot) {
   let t = shortCar(cars[i]);
   if (st === 'free') return t + '\n✅ ว่าง (รถจอดอยู่)';
   t += st === 'booked' ? '\n🔴 เบิกออกไปแล้ว' : '\n🟡 รออนุมัติ';
-  if (b) t += '\n👤 ' + (b.driver || '-') + '\n⏰ ' + formatTime(b.start) + ' - ' + formatTime(b.end);
+  if (b) t += '\n👤 ' + (b.driver || '-') + '\n⏰ ' + formatTime(b.start) + ' - ' + formatTime(b.end) +
+              (b.keystatus==='ยังไม่คืน' ? '\n🔑 ยังไม่คืนกุญแจ' : '');
   return t;
+}
+
+// รถ "ออกไปแล้ว" = อนุมัติแล้ว และ ยังไม่คืนกุญแจ  (คืนกุญแจแล้ว = รถกลับมาจอด)
+// รวมกรณีเบิกไปตั้งแต่วันก่อนแล้วยังไม่คืนกุญแจ → ยังถือว่ารถอยู่ข้างนอก
+function carOutBooking(c, d) {
+  if (!d) return null;
+  return bookings.find(b => b.car===c && b.status==='อนุมัติ' && b.keystatus!=='คืนแล้ว' &&
+    (getDateKey(b.date)===d || (b.keystatus==='ยังไม่คืน' && getDateKey(b.date) < d))) || null;
 }
 
 // booked → รถขับออกไป เหลือช่องแดง / free → รถขับกลับเข้ามา
 function updateLot(d) {
-  const slots = document.querySelectorAll('#lotStage .slot');
+  const slots = document.querySelectorAll('#lotSlots .slot');
   const chips = document.querySelectorAll('#lotChips .chip .dot');
   if (!slots.length) return;
   cars.forEach((c,i) => {
     let state = 'free', info = null;
     if (d) {
       const list = bookings.filter(b => getDateKey(b.date)===d && b.car===c);
-      const ap = list.find(b => b.status === 'อนุมัติ');
+      const ap = carOutBooking(c, d);
       const pe = list.find(b => b.status === 'รออนุมัติ');
       if (ap) { state='booked';  info=ap; }
       else if (pe) { state='pending'; info=pe; }
@@ -602,7 +572,7 @@ function renderDash() {
   let html = `<span class="dtitle">📊 สถานะรถ ${formatDate(d+"T00:00:00")} →</span>`;
   let found = false;
   cars.forEach((c,i) => {
-    if (bookings.find(b => getDateKey(b.date)===d && b.car===c && b.status==="อนุมัติ")) {
+    if (carOutBooking(c, d)) {
       html += `<span class="dash-item" style="animation-delay:${i*70}ms"><span class="dot red"></span>${c}</span>`;
       found = true;
     }
@@ -754,7 +724,7 @@ function updateLoginUI() {
 // ========== KEY STATUS ==========
 async function setKeyStatus(id, status, by) {
   const b = bookings.find(x => String(x.id)===String(id));
-  if (b) { b.keystatus=status; b.keyman=by; saveCache(bookings); popId=id; filterData(false); }
+  if (b) { b.keystatus=status; b.keyman=by; saveCache(bookings); popId=id; filterData(false); renderDash(); }
   toast(status==="คืนแล้ว" ? "✅ คืนกุญแจแล้ว" : "🔑 เบิกกุญแจแล้ว");
   try { await fetch(`${API}?action=updateKeyStatus&id=${id}&keystatus=${encodeURIComponent(status)}&keyman=${encodeURIComponent(by)}`); }
   catch(e) { toast("⚠️ sync ไม่สำเร็จ กด 🔄"); }
